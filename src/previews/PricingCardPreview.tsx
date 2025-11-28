@@ -264,7 +264,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                       fontWeight: 'bold',
                       minWidth: '28px'
                     }}>
-                      ✓
+                      
                     </span>
                     <span style={{ fontSize: '1.02em', lineHeight: '1.5' }}>
                       {f.text}
