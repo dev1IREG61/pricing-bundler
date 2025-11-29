@@ -113,9 +113,9 @@ const embedMode = isEmbedMode();
 
 if (embedMode) {
   // Embed mode - minimal styling
-  document.body.style.margin = '0';
-  document.body.style.padding = '0';
-  document.body.style.background = 'transparent';
+  // document.body.style.margin = '0';
+  // document.body.style.padding = '0';
+  // document.body.style.background = 'transparent';
 }
 
 if (!slug || slug.trim() === '') {
@@ -159,4 +159,9 @@ if (!slug || slug.trim() === '') {
 
   const root = ReactDOM.createRoot(container);
   root.render(<Widget widgetId={slug} />);
+
+  window.addEventListener('resize', () => {
+  parent.postMessage({ type: 'resize', height: document.body.scrollHeight }, '*');
+});
+  
 }
