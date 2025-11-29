@@ -33,5 +33,6 @@ export default defineConfig({
     rollupOptions: {
       input: 'index.html', // ← THIS IS THE KEY
     },
+    
   },
 })

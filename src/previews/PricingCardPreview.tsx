@@ -115,7 +115,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
     : data.cards || [];
 
   // Global styles from appearance
-  const primaryColor = appearance.primaryColor || '#1F2937';
+  const primaryColor =  '#1F2937';
   const secondaryColor = appearance.secondaryColor || '#F3F4F6';
   const fontFamily = appearance.font && appearance.font !== 'system-ui'
     ? `"${appearance.font}", sans-serif`
@@ -226,17 +226,25 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
               )}
 
               {/* Price */}
+              {/* Price */}
               <div style={{ margin: '24px 0' }}>
                 <span
                   style={{
                     fontSize: '3.2em',
                     fontWeight: '800',
-                    color: card.priceColor || primaryColor,   // ← Per-card or global primary
+                    color: card.priceColor || primaryColor,
                   }}
                 >
                   {card.price}
                 </span>
-                <span style={{ fontSize: '1.3em', opacity: 0.7, marginLeft: '4px' }}>
+                <span
+                  style={{
+                    fontSize: '1.3em',
+                    opacity: 0.7,
+                    marginLeft: '4px',
+                    color: card.priceColor || primaryColor   // ← FIXED: Same color as price
+                  }}
+                >
                   {card.period}
                 </span>
               </div>
@@ -264,7 +272,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                       fontWeight: 'bold',
                       minWidth: '28px'
                     }}>
-                      
+
                     </span>
                     <span style={{ fontSize: '1.02em', lineHeight: '1.5' }}>
                       {f.text}
