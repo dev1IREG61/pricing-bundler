@@ -117,22 +117,47 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
   // Global styles from appearance
   const primaryColor =  '#1F2937';
   const secondaryColor = appearance.secondaryColor || '#F3F4F6';
+  const buttonBgColor = appearance.buttonColor || primaryColor;        // NEW: Independent button color
   const fontFamily = appearance.font && appearance.font !== 'system-ui'
     ? `"${appearance.font}", sans-serif`
     : 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
   // Button style (shared)
-  const buttonStyle: React.CSSProperties = {
+  // const buttonStyle: React.CSSProperties = {
+  //   background:
+  //     appearance.buttonType === 'filled'
+  //       ? primaryColor
+  //       : appearance.buttonType === 'gradient'
+  //         ? `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+  //         : 'transparent',
+  //   border: appearance.buttonType === 'outline' ? `2px solid ${primaryColor}` : 'none',
+  //   color:
+  //     appearance.buttonType === 'outline' || appearance.buttonType === 'gradient'
+  //       ? primaryColor
+  //       : '#ffffff',
+  //   borderRadius: `${appearance.buttonRadius || 12}px`,
+  //   padding: '16px 32px',
+  //   fontWeight: '600',
+  //   fontSize: `${(appearance.fontSize || 16) * 1.1}px`,
+  //   cursor: 'pointer',
+  //   transition: 'all 0.25s ease',
+  //   display: 'inline-block',
+  //   textDecoration: 'none',
+  //   fontFamily: fontFamily,
+  //   boxShadow: appearance.buttonType === 'filled' ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
+  // };
+
+      const buttonStyle: React.CSSProperties = {
     background:
       appearance.buttonType === 'filled'
-        ? primaryColor
+        ? buttonBgColor
         : appearance.buttonType === 'gradient'
-          ? `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+          ? `linear-gradient(to right, ${buttonBgColor}, ${secondaryColor})`
           : 'transparent',
-    border: appearance.buttonType === 'outline' ? `2px solid ${primaryColor}` : 'none',
+    border: appearance.buttonType === 'outline' ? `3px solid ${buttonBgColor}` : 'none',
     color:
       appearance.buttonType === 'outline' || appearance.buttonType === 'gradient'
-        ? primaryColor
+        ? buttonBgColor
         : '#ffffff',
     borderRadius: `${appearance.buttonRadius || 12}px`,
     padding: '16px 32px',
