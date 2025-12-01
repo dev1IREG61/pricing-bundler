@@ -101,6 +101,259 @@
 // };
 
 
+//this is wokring perfeclty but hte text issue only 
+
+// import React from 'react';
+
+// interface PricingCardPreviewProps {
+//   data: any;
+//   appearance: any;
+// }
+
+// export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, appearance }) => {
+//   // Choose cards: support both old format (data.cards) and new multi-table mode
+//   const cards = data.multiTableMode && data.tables?.length > 0
+//     ? data.tables[0]?.cards || []
+//     : data.cards || [];
+
+//   // Global styles from appearance
+//   const primaryColor =  '#1F2937';
+//   const secondaryColor = appearance.secondaryColor || '#F3F4F6';
+//   const buttonBgColor = appearance.buttonColor || primaryColor;        // NEW: Independent button color
+//   const fontFamily = appearance.font && appearance.font !== 'system-ui'
+//     ? `"${appearance.font}", sans-serif`
+//     : 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+
+//   // Button style (shared)
+//   // const buttonStyle: React.CSSProperties = {
+//   //   background:
+//   //     appearance.buttonType === 'filled'
+//   //       ? primaryColor
+//   //       : appearance.buttonType === 'gradient'
+//   //         ? `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+//   //         : 'transparent',
+//   //   border: appearance.buttonType === 'outline' ? `2px solid ${primaryColor}` : 'none',
+//   //   color:
+//   //     appearance.buttonType === 'outline' || appearance.buttonType === 'gradient'
+//   //       ? primaryColor
+//   //       : '#ffffff',
+//   //   borderRadius: `${appearance.buttonRadius || 12}px`,
+//   //   padding: '16px 32px',
+//   //   fontWeight: '600',
+//   //   fontSize: `${(appearance.fontSize || 16) * 1.1}px`,
+//   //   cursor: 'pointer',
+//   //   transition: 'all 0.25s ease',
+//   //   display: 'inline-block',
+//   //   textDecoration: 'none',
+//   //   fontFamily: fontFamily,
+//   //   boxShadow: appearance.buttonType === 'filled' ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
+//   // };
+
+//       const buttonStyle: React.CSSProperties = {
+//     background:
+//       appearance.buttonType === 'filled'
+//         ? buttonBgColor
+//         : appearance.buttonType === 'gradient'
+//           ? `linear-gradient(to right, ${buttonBgColor}, ${secondaryColor})`
+//           : 'transparent',
+//     border: appearance.buttonType === 'outline' ? `3px solid ${buttonBgColor}` : 'none',
+//     color:
+//       appearance.buttonType === 'outline' || appearance.buttonType === 'gradient'
+//         ? buttonBgColor
+//         : '#ffffff',
+//     borderRadius: `${appearance.buttonRadius || 12}px`,
+//     padding: '16px 32px',
+//     fontWeight: '600',
+//     fontSize: `${(appearance.fontSize || 16) * 1.1}px`,
+//     cursor: 'pointer',
+//     transition: 'all 0.25s ease',
+//     display: 'inline-block',
+//     textDecoration: 'none',
+//     fontFamily: fontFamily,
+//     boxShadow: appearance.buttonType === 'filled' ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
+//   };
+
+//   // Hover effect (optional but nice)
+//   const buttonHoverStyle = {
+//     transform: 'translateY(-2px)',
+//     boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
+//   };
+
+//   return (
+//     <div
+//       style={{
+//         fontFamily,
+//         fontWeight: appearance.fontWeight || '400',
+//         fontSize: `${appearance.fontSize || 16}px`,
+//         lineHeight: '1.6',
+//         color: primaryColor,
+//         maxWidth: '1200px',
+//         margin: '0 auto',
+//         padding: '20px 0',
+//       }}
+//     >
+//       <div
+//         style={{
+//           display: 'grid',
+//           gap: '32px',
+//           gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+//           alignItems: 'stretch',
+//         }}
+//       >
+//         {cards.map((card: any, i: number) => (
+//           <div
+//             key={i}
+//             style={{
+//               backgroundColor: secondaryColor,           // ← Light card background
+//               color: primaryColor,                       // ← Dark text
+//               borderRadius: '16px',
+//               overflow: 'hidden',
+//               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+//               border: '1px solid #e5e7eb',
+//               display: 'flex',
+//               flexDirection: 'column',
+//               transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+//             }}
+//             onMouseEnter={(e) => {
+//               e.currentTarget.style.transform = 'translateY(-8px)';
+//               e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.15)';
+//             }}
+//             onMouseLeave={(e) => {
+//               e.currentTarget.style.transform = 'translateY(0)';
+//               e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
+//             }}
+//           >
+//             {/* Image */}
+//             {card.imageUrl && (
+//               <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+//                 <img
+//                   src={card.imageUrl}
+//                   alt={card.title}
+//                   style={{
+//                     width: '100%',
+//                     height: '100%',
+//                     objectFit: 'cover',
+//                     transition: 'transform 0.4s ease',
+//                   }}
+//                   onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+//                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+//                 />
+//               </div>
+//             )}
+
+//             {/* Content */}
+//             <div style={{ padding: '32px', textAlign: 'center', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+//               <h3 style={{ fontSize: '1.8em', margin: '0 0 8px 0', fontWeight: '700' }}>
+//                 {card.title}
+//               </h3>
+//               {card.titleCaption && (
+//                 <p style={{ opacity: 0.7, margin: '0 0 16px 0', fontSize: '0.95em' }}>
+//                   {card.titleCaption}
+//                 </p>
+//               )}
+
+//               {/* Price */}
+//               {/* Price */}
+//               <div style={{ margin: '24px 0' }}>
+//                 <span
+//                   style={{
+//                     fontSize: '3.2em',
+//                     fontWeight: '800',
+//                     color: card.priceColor || primaryColor,
+//                   }}
+//                 >
+//                   {card.price}
+//                 </span>
+//                 <span
+//                   style={{
+//                     fontSize: '1.3em',
+//                     opacity: 0.7,
+//                     marginLeft: '4px',
+//                     color: card.priceColor || primaryColor   // ← FIXED: Same color as price
+//                   }}
+//                 >
+//                   {card.period}
+//                 </span>
+//               </div>
+
+//               {card.priceCaption && (
+//                 <p style={{ opacity: 0.7, margin: '8px 0 16px', fontSize: '0.95em' }}>
+                
+//                   {card.priceCaption}
+//                 </p>
+//               )}
+
+//               {card.description && (
+//                 <p style={{ margin: '16px 0', fontSize: '1.1em', fontWeight: '500', opacity: 0.9 }}>
+//                   {card.description}
+//                 </p>
+//               )}
+
+//               {/* Features */}
+//               <ul style={{ textAlign: 'left', margin: '28px 0', paddingLeft: '24px', flexGrow: 1 }}>
+//                 {card.features?.map((f: any, fi: number) => (
+//                   <li key={fi} style={{ margin: '14px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+//                     {/* This renders the exact same check icon that appears in your builder */}
+//                     <span style={{
+//                       color: '#F3F4F6',
+//                       fontSize: '1.4em',
+//                       fontWeight: 'bold',
+//                       minWidth: '28px'
+//                     }}>
+
+//                     </span>
+//                     <span style={{ fontSize: '1.02em', lineHeight: '1.5' }}>
+//                       {f.text}
+//                       {f.hint && <span style={{ marginLeft: '8px', color: '#6b7280', fontSize: '0.9em' }}> ({f.hint})</span>}
+//                     </span>
+//                   </li>
+//                 ))}
+//               </ul>
+
+//               {/* Button */}
+//               <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+//                 {card.buttonLink ? (
+//                   <a
+//                     href={card.buttonLink}
+//                     target={card.buttonLinkTarget || '_self'}
+//                     rel={card.buttonLinkTarget === '_blank' ? 'noopener noreferrer' : undefined}
+//                     style={buttonStyle}
+//                     onMouseEnter={(e) => Object.assign(e.currentTarget.style, buttonHoverStyle)}
+//                     onMouseLeave={(e) => {
+//                       e.currentTarget.style.transform = '';
+//                       e.currentTarget.style.boxShadow = buttonStyle.boxShadow as string;
+//                     }}
+//                   >
+//                     {card.buttonText || 'Get Started'}
+//                   </a>
+//                 ) : (
+//                   <button
+//                     style={buttonStyle}
+//                     onMouseEnter={(e) => Object.assign(e.currentTarget.style, buttonHoverStyle)}
+//                     onMouseLeave={(e) => {
+//                       e.currentTarget.style.transform = '';
+//                       e.currentTarget.style.boxShadow = buttonStyle.boxShadow as string;
+//                     }}
+//                   >
+//                     {card.buttonText || 'Get Started'}
+//                   </button>
+//                 )}
+
+//                 {card.buttonCaption && (
+//                   <p style={{ margin: '12px 0 0 0', opacity: 0.7, fontSize: '0.9em' }}>
+//                     {card.buttonCaption}
+//                   </p>
+//                 )}
+//               </div>
+//             </div>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// };
+
+
 import React from 'react';
 
 interface PricingCardPreviewProps {
@@ -114,40 +367,16 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
     ? data.tables[0]?.cards || []
     : data.cards || [];
 
-  // Global styles from appearance
-  const primaryColor =  '#1F2937';
+  // Global styles from appearance - KEEP original primaryColor
+  const primaryColor = appearance.primaryColor || '#1F2937';
   const secondaryColor = appearance.secondaryColor || '#F3F4F6';
-  const buttonBgColor = appearance.buttonColor || primaryColor;        // NEW: Independent button color
+  const buttonBgColor = appearance.buttonColor || primaryColor;
   const fontFamily = appearance.font && appearance.font !== 'system-ui'
     ? `"${appearance.font}", sans-serif`
     : 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
-  // Button style (shared)
-  // const buttonStyle: React.CSSProperties = {
-  //   background:
-  //     appearance.buttonType === 'filled'
-  //       ? primaryColor
-  //       : appearance.buttonType === 'gradient'
-  //         ? `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
-  //         : 'transparent',
-  //   border: appearance.buttonType === 'outline' ? `2px solid ${primaryColor}` : 'none',
-  //   color:
-  //     appearance.buttonType === 'outline' || appearance.buttonType === 'gradient'
-  //       ? primaryColor
-  //       : '#ffffff',
-  //   borderRadius: `${appearance.buttonRadius || 12}px`,
-  //   padding: '16px 32px',
-  //   fontWeight: '600',
-  //   fontSize: `${(appearance.fontSize || 16) * 1.1}px`,
-  //   cursor: 'pointer',
-  //   transition: 'all 0.25s ease',
-  //   display: 'inline-block',
-  //   textDecoration: 'none',
-  //   fontFamily: fontFamily,
-  //   boxShadow: appearance.buttonType === 'filled' ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
-  // };
-
-      const buttonStyle: React.CSSProperties = {
+  // Button style
+  const buttonStyle: React.CSSProperties = {
     background:
       appearance.buttonType === 'filled'
         ? buttonBgColor
@@ -171,7 +400,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
     boxShadow: appearance.buttonType === 'filled' ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
   };
 
-  // Hover effect (optional but nice)
+  // Hover effect
   const buttonHoverStyle = {
     transform: 'translateY(-2px)',
     boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
@@ -184,7 +413,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
         fontWeight: appearance.fontWeight || '400',
         fontSize: `${appearance.fontSize || 16}px`,
         lineHeight: '1.6',
-        color: primaryColor,
+        color: '#1F2937', // Container text color (default)
         maxWidth: '1200px',
         margin: '0 auto',
         padding: '20px 0',
@@ -202,8 +431,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
           <div
             key={i}
             style={{
-              backgroundColor: secondaryColor,           // ← Light card background
-              color: primaryColor,                       // ← Dark text
+              backgroundColor: secondaryColor,
               borderRadius: '16px',
               overflow: 'hidden',
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
@@ -241,23 +469,34 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
 
             {/* Content */}
             <div style={{ padding: '32px', textAlign: 'center', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ fontSize: '1.8em', margin: '0 0 8px 0', fontWeight: '700' }}>
+              {/* Title - KEEP original color */}
+              <h3 style={{ 
+                fontSize: '1.8em', 
+                margin: '0 0 8px 0', 
+                fontWeight: '700',
+                color: '#1F2937'  // Original color
+              }}>
                 {card.title}
               </h3>
+              
               {card.titleCaption && (
-                <p style={{ opacity: 0.7, margin: '0 0 16px 0', fontSize: '0.95em' }}>
+                <p style={{ 
+                  opacity: 0.7, 
+                  margin: '0 0 16px 0', 
+                  fontSize: '0.95em',
+                  color: '#1F2937'  // Original color
+                }}>
                   {card.titleCaption}
                 </p>
               )}
 
-              {/* Price */}
-              {/* Price */}
+              {/* Price - KEEP original logic */}
               <div style={{ margin: '24px 0' }}>
                 <span
                   style={{
                     fontSize: '3.2em',
                     fontWeight: '800',
-                    color: card.priceColor || primaryColor,
+                    color: card.priceColor || '#1F2937',  // Original logic
                   }}
                 >
                   {card.price}
@@ -267,7 +506,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                     fontSize: '1.3em',
                     opacity: 0.7,
                     marginLeft: '4px',
-                    color: card.priceColor || primaryColor   // ← FIXED: Same color as price
+                    color: card.priceColor || '#1F2937'  // Original logic
                   }}
                 >
                   {card.period}
@@ -275,33 +514,66 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
               </div>
 
               {card.priceCaption && (
-                <p style={{ opacity: 0.7, margin: '8px 0 16px', fontSize: '0.95em' }}>
+                <p style={{ 
+                  opacity: 0.7, 
+                  margin: '8px 0 16px', 
+                  fontSize: '0.95em',
+                  color: '#1F2937'  // Original color
+                }}>
                   {card.priceCaption}
                 </p>
               )}
 
+              {/* DESCRIPTION - USE PRIMARY COLOR */}
               {card.description && (
-                <p style={{ margin: '16px 0', fontSize: '1.1em', fontWeight: '500', opacity: 0.9 }}>
+                <p style={{ 
+                  margin: '16px 0', 
+                  fontSize: '1.1em', 
+                  fontWeight: '500', 
+                  opacity: 0.9,
+                  color: primaryColor  // ← CHANGED to primaryColor
+                }}>
                   {card.description}
                 </p>
               )}
 
-              {/* Features */}
-              <ul style={{ textAlign: 'left', margin: '28px 0', paddingLeft: '24px', flexGrow: 1 }}>
+              {/* FEATURES - USE PRIMARY COLOR */}
+              <ul style={{ 
+                textAlign: 'left', 
+                margin: '28px 0', 
+                paddingLeft: '24px', 
+                flexGrow: 1 
+              }}>
                 {card.features?.map((f: any, fi: number) => (
-                  <li key={fi} style={{ margin: '14px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {/* This renders the exact same check icon that appears in your builder */}
+                  <li key={fi} style={{ 
+                    margin: '14px 0', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px' 
+                  }}>
                     <span style={{
-                      color: '#F3F4F6',
+                      color: '#10B981',
                       fontSize: '1.4em',
                       fontWeight: 'bold',
                       minWidth: '28px'
                     }}>
-
+                      
                     </span>
-                    <span style={{ fontSize: '1.02em', lineHeight: '1.5' }}>
+                    <span style={{ 
+                      fontSize: '1.02em', 
+                      lineHeight: '1.5',
+                      color: primaryColor  // ← CHANGED to primaryColor
+                    }}>
                       {f.text}
-                      {f.hint && <span style={{ marginLeft: '8px', color: '#6b7280', fontSize: '0.9em' }}> ({f.hint})</span>}
+                      {f.hint && (
+                        <span style={{ 
+                          marginLeft: '8px', 
+                          color: '#6b7280', 
+                          fontSize: '0.9em' 
+                        }}>
+                          ({f.hint})
+                        </span>
+                      )}
                     </span>
                   </li>
                 ))}
@@ -337,7 +609,12 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                 )}
 
                 {card.buttonCaption && (
-                  <p style={{ margin: '12px 0 0 0', opacity: 0.7, fontSize: '0.9em' }}>
+                  <p style={{ 
+                    margin: '12px 0 0 0', 
+                    opacity: 0.7, 
+                    fontSize: '0.9em',
+                    color: '#1F2937'  // Original color
+                  }}>
                     {card.buttonCaption}
                   </p>
                 )}
