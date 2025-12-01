@@ -562,7 +562,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                     <span style={{ 
                       fontSize: '1.02em', 
                       lineHeight: '1.5',
-                      color: primaryColor  // ← CHANGED to primaryColor
+                      color: primaryColor  // 
                     }}>
                       {f.text}
                       {f.hint && (
