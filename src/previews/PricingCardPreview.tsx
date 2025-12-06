@@ -1370,6 +1370,10 @@
 //   );
 // };
 
+
+
+
+
 import React, { useState } from 'react';
 
 interface PricingCardPreviewProps {
@@ -1538,15 +1542,15 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
       )}
 
       {/* Cards Grid - Responsive */}
-       <div
+    <div
         style={{
           display: 'grid',
           gap: 'clamp(20px, 3vw, 32px)',
-          gridTemplateColumns: activeCards.length === 1 
-            ? 'minmax(300px, 400px)' 
-            : activeCards.length === 2 
-            ? 'repeat(2, minmax(300px, 400px))' 
-            : 'repeat(auto-fit, minmax(300px, 1fr))',
+          gridTemplateColumns: activeCards.length === 1
+            ? 'minmax(300px, 400px)'
+            : activeCards.length === 2
+              ? 'repeat(auto-fit, minmax(min(100%, 300px), 400px))'
+              : 'repeat(auto-fit, minmax(300px, 1fr))',
           justifyContent: 'center',
           maxWidth: '1200px',
           margin: '0 auto',
@@ -1595,33 +1599,32 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
             )}
 
             {/* Content */}
-            <div style={{ 
-              padding: 'clamp(20px, 4vw, 32px)', 
-              textAlign: 'center', 
-              flexGrow: 1, 
-              display: 'flex', 
-              flexDirection: 'column' 
+            <div style={{
+              padding: 'clamp(20px, 4vw, 32px)',
+              textAlign: 'center',
+              flexGrow: 1,
+              display: 'flex',
+              flexDirection: 'column'
             }}>
-              <h3 style={{ 
-                fontSize: 'clamp(1.4em, 3.5vw, 1.8em)', 
-                margin: '0 0 8px 0', 
-                fontWeight: '700', 
-                color: '#1F2937' 
+              <h3 style={{
+                fontSize: 'clamp(1.4em, 3.5vw, 1.8em)',
+                margin: '0 0 8px 0',
+                fontWeight: '700',
+                color: '#1F2937'
               }}>
                 {card.title}
               </h3>
 
               {card.titleCaption && (
-                <p style={{ 
-                  opacity: 0.7, 
-                  margin: '0 0 16px 0', 
-                  fontSize: 'clamp(0.85em, 2vw, 0.95em)', 
-                  color: '#1F2937' 
+                <p style={{
+                  opacity: 0.7,
+                  margin: '0 0 16px 0',
+                  fontSize: 'clamp(0.85em, 2vw, 0.95em)',
+                  color: '#1F2937'
                 }}>
                   {card.titleCaption}
                 </p>
               )}
-
               {card.oldPriceEnabled && (card.oldPrice || card.discountLabel) && (
                 <div style={{
                   display: 'flex',
@@ -1633,8 +1636,6 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                   width: '100%',
                   flexWrap: 'wrap',
                   gap: '8px',
-               
-
                 }}>
                   {card.oldPrice && (
                     <div style={{
@@ -1657,13 +1658,15 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                       fontWeight: 'bold',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                       whiteSpace: 'nowrap',
-                      
+                      position: 'absolute',
+                      right: '8px',
                     }}>
                       {card.discountLabel}
                     </div>
                   )}
                 </div>
               )}
+
 
               <div style={{ margin: '10px 0' }}>
                 <span style={{
@@ -1684,60 +1687,60 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
               </div>
 
               {card.priceCaption && (
-                <p style={{ 
-                  opacity: 0.7, 
-                  margin: '3px 0 16px', 
-                  fontSize: 'clamp(0.85em, 2vw, 0.95em)', 
-                  color: primaryColor || '#1F2937' 
+                <p style={{
+                  opacity: 0.7,
+                  margin: '3px 0 16px',
+                  fontSize: 'clamp(0.85em, 2vw, 0.95em)',
+                  color: primaryColor || '#1F2937'
                 }}>
                   {card.priceCaption}
                 </p>
               )}
 
               {card.description && (
-                <p style={{ 
-                  margin: '2px 0', 
-                  fontSize: 'clamp(1em, 2.2vw, 1.1em)', 
-                  fontWeight: '500', 
-                  opacity: 0.9, 
-                  color: primaryColor 
+                <p style={{
+                  margin: '2px 0',
+                  fontSize: 'clamp(1em, 2.2vw, 1.1em)',
+                  fontWeight: '500',
+                  opacity: 0.9,
+                  color: primaryColor
                 }}>
                   {card.description}
                 </p>
               )}
 
-              <ul style={{ 
-                textAlign: 'left', 
-                margin: '28px 0', 
-                paddingLeft: 'clamp(16px, 3vw, 24px)', 
+              <ul style={{
+                textAlign: 'left',
+                margin: '28px 0',
+                paddingLeft: 'clamp(16px, 3vw, 24px)',
                 flexGrow: 1,
                 minHeight: 'clamp(200px, 35vw, 280px)'
               }}>
                 {card.features?.map((f: any, fi: number) => (
-                  <li key={fi} style={{ 
-                    margin: '14px 0', 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <li key={fi} style={{
+                    margin: '14px 0',
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: '12px',
                     minHeight: '40px'
                   }}>
-                    <span style={{ 
-                      color: secondaryColor || '#10B981', 
-                      fontSize: 'clamp(1.2em, 2.5vw, 1.4em)', 
+                    <span style={{
+                      color: secondaryColor || '#10B981',
+                      fontSize: 'clamp(1.2em, 2.5vw, 1.4em)',
                       fontWeight: 'bold',
                       flexShrink: 0
                     }}>✓</span>
-                    <span style={{ 
-                      fontSize: 'clamp(0.95em, 2vw, 1.02em)', 
-                      lineHeight: '1.5', 
-                      color: primaryColor 
+                    <span style={{
+                      fontSize: 'clamp(0.95em, 2vw, 1.02em)',
+                      lineHeight: '1.5',
+                      color: primaryColor
                     }}>
                       {f.text}
                     </span>
                     {f.hint && (
-                      <span 
+                      <span
                         title={f.hint}
-                        style={{ 
+                        style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1766,8 +1769,8 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                     href={card.buttonLink}
                     target={card.buttonLinkTarget || '_self'}
                     rel={card.buttonLinkTarget === '_blank' ? 'noopener noreferrer' : undefined}
-                    style={{ 
-                      ...buttonStyle, 
+                    style={{
+                      ...buttonStyle,
                       width: '100%',
                       padding: 'clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 32px)',
                       fontSize: 'clamp(0.95em, 2.2vw, 1.1em)'
@@ -1776,8 +1779,8 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                     {card.buttonText || 'Book now'}
                   </a>
                 ) : (
-                  <button style={{ 
-                    ...buttonStyle, 
+                  <button style={{
+                    ...buttonStyle,
                     width: '100%',
                     padding: 'clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 32px)',
                     fontSize: 'clamp(0.95em, 2.2vw, 1.1em)'
@@ -1787,11 +1790,11 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                 )}
 
                 {card.buttonCaption && (
-                  <p style={{ 
-                    margin: '12px 0 0 0', 
-                    opacity: 0.7, 
-                    fontSize: 'clamp(0.8em, 1.8vw, 0.9em)', 
-                    color: '#1F2937' 
+                  <p style={{
+                    margin: '12px 0 0 0',
+                    opacity: 0.7,
+                    fontSize: 'clamp(0.8em, 1.8vw, 0.9em)',
+                    color: '#1F2937'
                   }}>
                     {card.buttonCaption}
                   </p>
