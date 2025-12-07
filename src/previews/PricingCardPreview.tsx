@@ -1672,7 +1672,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                 <span style={{
                   fontSize: 'clamp(2.2em, 6vw, 3.2em)',
                   fontWeight: '800',
-                  color: card.priceColor || primaryColor,
+                  color: card.priceColor ,
                 }}>
                   {card.price}
                 </span>
@@ -1680,7 +1680,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                   fontSize: 'clamp(1em, 2.5vw, 1.3em)',
                   opacity: 0.7,
                   marginLeft: '4px',
-                  color: card.priceColor || primaryColor,
+                  color: card.priceColor ,
                 }}>
                   {card.period}
                 </span>
