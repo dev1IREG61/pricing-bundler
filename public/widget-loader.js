@@ -198,50 +198,159 @@
 
 
 // EMERGENCY DEMO FIX — WORKS 100% EVEN WITH CORS
-(function() {
-  'use strict';
+// (function() {
+//   'use strict';
   
+//   function loadWidget(slug) {
+//     let container = document.getElementById('widget-' + slug);
+//     if (!container) {
+//       container = document.createElement('div');
+//       container.id = 'widget-' + slug;
+//       document.body.appendChild(container);
+//     }
+
+//     container.innerHTML = ''; // Clear
+//     container.style.cssText = 'width:100%; max-width:1300px; margin:0 auto; padding:0;';
+
+//     const iframe = document.createElement('iframe');
+//     iframe.src = 'https://pricing-bundler-green.vercel.app/?slug=' + slug;
+//     iframe.style.cssText = `
+//       width: 100% !important;
+//       min-height: 900px !important;
+//       height: 2000px !important;
+//       border: none !important;
+//       display: block !important;
+//       overflow: hidden !important;
+//     `;
+//     iframe.scrolling = "no";
+//     iframe.frameBorder = "0";
+
+//     container.appendChild(iframe);
+//   }
+
+//   // Get slug from script tag
+//   const script = document.currentScript || document.querySelector('script[src*="widget-loader"]');
+//   if (script) {
+//     const url = new URL(script.src);
+//     const slug = url.searchParams.get('slug');
+//     if (slug) {
+//       if (document.readyState === 'loading') {
+//         document.addEventListener('DOMContentLoaded', () => loadWidget(slug));
+//       } else {
+//         loadWidget(slug);
+//       }
+//     }
+//   }
+// })();
+
+(function () {
+  'use strict';
+
   function loadWidget(slug) {
+    if (!slug) return;
+
+    // Look for existing container with correct ID
     let container = document.getElementById('widget-' + slug);
+
+    // If not found, create fallback at bottom (safety)
     if (!container) {
       container = document.createElement('div');
       container.id = 'widget-' + slug;
       document.body.appendChild(container);
     }
 
-    container.innerHTML = ''; // Clear
+    // Clear loading message
+    container.innerHTML = '';
+
+    // Style container
     container.style.cssText = 'width:100%; max-width:1300px; margin:0 auto; padding:0;';
 
     const iframe = document.createElement('iframe');
     iframe.src = 'https://pricing-bundler-green.vercel.app/?slug=' + slug;
     iframe.style.cssText = `
       width: 100% !important;
-      min-height: 900px !important;
-      height: 2000px !important;
+      height: 100vh !important;
+      min-height: 800px !important;
       border: none !important;
       display: block !important;
-      overflow: hidden !important;
     `;
-    iframe.scrolling = "no";
-    iframe.frameBorder = "0";
+    iframe.frameBorder = '0';
 
     container.appendChild(iframe);
+
+    // Auto resize (optional but recommended)
+    window.addEventListener('message', (e) => {
+      if (e.data.type === 'resize' && e.data.height) {
+        iframe.style.height = e.data.height + 50 + 'px';
+      }
+    });
   }
 
-  // Get slug from script tag
-  const script = document.currentScript || document.querySelector('script[src*="widget-loader"]');
+  const script = document.currentScript;
   if (script) {
-    const url = new URL(script.src);
-    const slug = url.searchParams.get('slug');
-    if (slug) {
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => loadWidget(slug));
-      } else {
-        loadWidget(slug);
+    try {
+      const url = new URL(script.src);
+      const slug = url.searchParams.get('slug');
+      if (slug) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => loadWidget(slug));
+        } else {
+          loadWidget(slug);
+        }
       }
+    } catch (e) {
+      console.warn('Failed to load widget slug');
     }
   }
 })();
+
+// (function() {
+//   'use strict';
+  
+//   function loadWidget(slug) {
+//     // First, try to find an existing container with the ID
+//     let container = document.getElementById('widget-' + slug);
+    
+//     // If not found, create one and append to body (fallback - bottom)
+//     if (!container) {
+//       container = document.createElement('div');
+//       container.id = 'widget-' + slug;
+//       document.body.appendChild(container);
+//     }
+
+//     container.innerHTML = ''; // Clear previous content
+//     container.style.cssText = 'width:100%; max-width:1300px; margin:0 auto; padding:0;';
+
+//     const iframe = document.createElement('iframe');
+//     iframe.src = 'https://pricing-bundler-green.vercel.app/?slug=' + slug;
+//     iframe.style.cssText = `
+//       width: 100% !important;
+//       min-height: 900px !important;
+//       height: 2000px !important;
+//       border: none !important;
+//       display: block !important;
+//       overflow: hidden !important;
+//     `;
+//     iframe.scrolling = "no";
+//     iframe.frameBorder = "0";
+
+//     container.appendChild(iframe);
+//   }
+
+//   // Get slug from script tag
+//   const script = document.currentScript || document.querySelector('script[src*="widget-loader"]');
+//   if (script) {
+//     const url = new URL(script.src);
+//     const slug = url.searchParams.get('slug');
+//     if (slug) {
+//       if (document.readyState === 'loading') {
+//         document.addEventListener('DOMContentLoaded', () => loadWidget(slug));
+//       } else {
+//         loadWidget(slug);
+//       }
+//     }
+//   }
+// })();
 
 // // widget-loader.js → FINAL PERFECT FINAL VERSION (Centered + No Dots)
 // (function () {
