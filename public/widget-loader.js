@@ -269,19 +269,35 @@
     iframe.src = 'https://pricing-bundler-green.vercel.app/?slug=' + slug;
     iframe.style.cssText = `
       width: 100% !important;
-      height: 100vh !important;
       min-height: 800px !important;
       border: none !important;
       display: block !important;
     `;
     iframe.frameBorder = '0';
+    iframe.scrolling = 'no';
 
     container.appendChild(iframe);
 
-    // Auto resize (optional but recommended)
+    let lastSetHeight = 0;
+    
+    iframe.onload = function() {
+      try {
+        const height = iframe.contentWindow.document.documentElement.scrollHeight;
+        iframe.style.height = height + 'px';
+        lastSetHeight = height;
+      } catch (e) {
+        // Cross-origin, use postMessage
+      }
+    };
+    
     window.addEventListener('message', (e) => {
       if (e.data.type === 'resize' && e.data.height) {
-        iframe.style.height = e.data.height + 50 + 'px';
+        const newHeight = e.data.height;
+        // Only update if height changed significantly
+        if (Math.abs(newHeight - lastSetHeight) > 10) {
+          iframe.style.height = newHeight + 'px';
+          lastSetHeight = newHeight;
+        }
       }
     });
   }

@@ -54,13 +54,14 @@ if (!slug || slug.trim() === '') {
         padding: 0;
         background: transparent;
         width: 100%;
+        overflow: visible;
       `;
     } else {
       // Full page styling
       container.style.cssText = `
         max-width: 1300px;
-        margin: 40px auto;
-        padding: 20px;
+        margin: 0px;
+        padding: 0px;
         background: white;
         border-radius: 16px;
         box-shadow: 0 20px 40px rgba(0,0,0,0.08);
@@ -73,8 +74,33 @@ if (!slug || slug.trim() === '') {
   const root = ReactDOM.createRoot(container);
   root.render(<Widget widgetId={slug} />);
 
-  window.addEventListener('resize', () => {
-  parent.postMessage({ type: 'resize', height: document.body.scrollHeight }, '*');
-});
+  // Send resize messages to parent window
+  let lastHeight = 0;
+  function sendResize() {
+    const height = Math.max(
+      document.body.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.scrollHeight,
+      document.documentElement.offsetHeight
+    );
+    // Only send if height actually changed
+    if (Math.abs(height - lastHeight) > 10) {
+      lastHeight = height;
+      parent.postMessage({ type: 'resize', height }, '*');
+    }
+  }
+
+  // Send initial resize after content loads
+  setTimeout(sendResize, 500);
+  setTimeout(sendResize, 1500);
+  
+  // Observe DOM changes to detect content height changes
+  const observer = new MutationObserver(() => {
+    setTimeout(sendResize, 100);
+  });
+  observer.observe(document.body, { 
+    childList: true, 
+    subtree: true
+  });
   
 }

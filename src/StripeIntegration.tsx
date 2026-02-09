@@ -4,6 +4,7 @@ import { CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useEle
 interface StripeIntegrationProps {
   clientSecret: string;
   paymentType?: 'subscription' | 'payment' | 'one_time';
+  stripeAccount?: string;
   onSuccess: () => void;
   onBack: () => void;
 }
@@ -11,6 +12,7 @@ interface StripeIntegrationProps {
 export const StripeIntegration: React.FC<StripeIntegrationProps> = ({
   clientSecret,
   paymentType = 'subscription',
+  stripeAccount,
   onSuccess,
   onBack
 }) => {
@@ -43,11 +45,16 @@ export const StripeIntegration: React.FC<StripeIntegrationProps> = ({
       }
 
       if (paymentType === 'subscription') {
-        const { error: confirmError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
-          payment_method: {
-            card: cardNumberElement,
-          }
-        });
+        const options = stripeAccount ? { stripeAccount } : {};
+        const { error: confirmError, setupIntent } = await stripe.confirmCardSetup(
+          clientSecret,
+          {
+            payment_method: {
+              card: cardNumberElement,
+            }
+          },
+          options
+        );
 
         if (confirmError) {
           setError(confirmError.message || 'Payment setup failed. Please try again.');
@@ -57,11 +64,16 @@ export const StripeIntegration: React.FC<StripeIntegrationProps> = ({
           setError('Payment setup was not successful. Please try again.');
         }
       } else {
-        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: cardNumberElement,
-          }
-        });
+        const options = stripeAccount ? { stripeAccount } : {};
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          clientSecret,
+          {
+            payment_method: {
+              card: cardNumberElement,
+            }
+          },
+          options
+        );
 
         if (confirmError) {
           setError(confirmError.message || 'Payment failed. Please try again.');

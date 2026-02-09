@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ComparisonTablePreview } from './previews/ComparisonTablePreview';
 import { PricingCardPreview } from './previews/PricingCardPreview';
-import { StripeProvider } from './StripeProvider';
 
 const Widget: React.FC<{ widgetId: string }> = ({ widgetId }) => {
   const [content, setContent] = useState<any>(null);
@@ -74,24 +73,22 @@ const Widget: React.FC<{ widgetId: string }> = ({ widgetId }) => {
   }
 
   return (
-    <StripeProvider>
-      <div style={{ background: isEmbedMode() ? 'transparent' : 'white' }}>
-        {content.type === "pricing_columns" ? (
-          <PricingCardPreview data={content.data} appearance={content.appearance} widgetId={actualWidgetId} />
-        ) : content.type === "comparison_table" ? (
-          <ComparisonTablePreview data={content.data} appearance={content.appearance} widgetId={actualWidgetId} />
-        ) : (
-          <div style={{ 
-            padding: isEmbedMode() ? "20px" : "60px", 
-            textAlign: "center", 
-            color: "#ef4444",
-            background: isEmbedMode() ? 'transparent' : 'white'
-          }}>
-            Unsupported widget type: {content.type}
-          </div>
-        )}
-      </div>
-    </StripeProvider>
+    <div style={{ background: isEmbedMode() ? 'transparent' : 'white' }}>
+      {content.type === "pricing_columns" ? (
+        <PricingCardPreview data={content.data} appearance={content.appearance} widgetId={actualWidgetId} />
+      ) : content.type === "comparison_table" ? (
+        <ComparisonTablePreview data={content.data} appearance={content.appearance} widgetId={actualWidgetId} />
+      ) : (
+        <div style={{ 
+          padding: isEmbedMode() ? "20px" : "60px", 
+          textAlign: "center", 
+          color: "#ef4444",
+          background: isEmbedMode() ? 'transparent' : 'white'
+        }}>
+          Unsupported widget type: {content.type}
+        </div>
+      )}
+    </div>
   );
 };
 

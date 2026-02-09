@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StripeIntegration } from './StripeIntegration';
+import { StripeProvider } from './StripeProvider';
 
 interface PaymentFlowProps {
   widgetId: string;
@@ -22,6 +23,7 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
   const [clientSecret, setClientSecret] = useState('');
   const [paymentIntentId, setPaymentIntentId] = useState('');
   const [backendPaymentType, setBackendPaymentType] = useState<'subscription' | 'payment' | 'one_time'>('subscription');
+  const [stripeAccount, setStripeAccount] = useState<string>();
 
   const handlePaymentMethodSelect = async (method: string) => {
     if (method !== 'credit_card' || !email) return;
@@ -50,6 +52,7 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
         setClientSecret(data.client_secret);
         setPaymentIntentId(data.payment_intent_id || data.subscription_id);
         setBackendPaymentType(data.payment_type);
+        setStripeAccount(data.stripe_account);
         setStep('stripe');
       } else {
         alert(data.message || 'Payment creation failed');
@@ -82,12 +85,15 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
 
   if (step === 'stripe') {
     return (
-      <StripeIntegration 
-        clientSecret={clientSecret}
-        paymentType={backendPaymentType}
-        onSuccess={handleStripeSuccess}
-        onBack={() => setStep('methods')}
-      />
+      <StripeProvider stripeAccount={stripeAccount}>
+        <StripeIntegration 
+          clientSecret={clientSecret}
+          paymentType={backendPaymentType}
+          stripeAccount={stripeAccount}
+          onSuccess={handleStripeSuccess}
+          onBack={() => setStep('methods')}
+        />
+      </StripeProvider>
     );
   }
 
