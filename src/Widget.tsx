@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ComparisonTablePreview } from './previews/ComparisonTablePreview';
 import { PricingCardPreview } from './previews/PricingCardPreview';
+import { StripeProvider } from './StripeProvider';
 
 const Widget: React.FC<{ widgetId: string }> = ({ widgetId }) => {
   const [content, setContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [actualWidgetId, setActualWidgetId] = useState<string>('');
 
   // Check if we're in embed mode
   const isEmbedMode = () => {
@@ -18,7 +20,7 @@ const Widget: React.FC<{ widgetId: string }> = ({ widgetId }) => {
       return;
     }
 
-    fetch(`https://mypowerly.com/v1/api/widgets/widget-data/public/${widgetId}/`)
+    fetch(`https://esign-admin.signmary.com/api/widgets/widget-data/public/${widgetId}/`)
       .then(res => {
         if (!res.ok) throw new Error("Widget not found");
         return res.json();
@@ -26,6 +28,9 @@ const Widget: React.FC<{ widgetId: string }> = ({ widgetId }) => {
       .then(result => {
         const innerData = result.data.data;
         const appearance = innerData.appearance;
+        
+        // Store the actual widget ID from the response
+        setActualWidgetId(result.data.id);
 
         setContent({
           type: result.data.type,
@@ -69,22 +74,24 @@ const Widget: React.FC<{ widgetId: string }> = ({ widgetId }) => {
   }
 
   return (
-    <div style={{ background: isEmbedMode() ? 'transparent' : 'white' }}>
-      {content.type === "pricing_columns" ? (
-        <PricingCardPreview data={content.data} appearance={content.appearance} />
-      ) : content.type === "comparison_table" ? (
-        <ComparisonTablePreview data={content.data} appearance={content.appearance} />
-      ) : (
-        <div style={{ 
-          padding: isEmbedMode() ? "20px" : "60px", 
-          textAlign: "center", 
-          color: "#ef4444",
-          background: isEmbedMode() ? 'transparent' : 'white'
-        }}>
-          Unsupported widget type: {content.type}
-        </div>
-      )}
-    </div>
+    <StripeProvider>
+      <div style={{ background: isEmbedMode() ? 'transparent' : 'white' }}>
+        {content.type === "pricing_columns" ? (
+          <PricingCardPreview data={content.data} appearance={content.appearance} widgetId={actualWidgetId} />
+        ) : content.type === "comparison_table" ? (
+          <ComparisonTablePreview data={content.data} appearance={content.appearance} widgetId={actualWidgetId} />
+        ) : (
+          <div style={{ 
+            padding: isEmbedMode() ? "20px" : "60px", 
+            textAlign: "center", 
+            color: "#ef4444",
+            background: isEmbedMode() ? 'transparent' : 'white'
+          }}>
+            Unsupported widget type: {content.type}
+          </div>
+        )}
+      </div>
+    </StripeProvider>
   );
 };
 
