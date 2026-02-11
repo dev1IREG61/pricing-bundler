@@ -44,7 +44,11 @@ export const StripeIntegration: React.FC<StripeIntegrationProps> = ({
         return;
       }
 
-      if (paymentType === 'subscription') {
+      // Check if client_secret is SetupIntent or PaymentIntent
+      const isSetupIntent = clientSecret.startsWith('seti_');
+      const isPaymentIntent = clientSecret.startsWith('pi_');
+
+      if (isSetupIntent) {
         const options = stripeAccount ? { stripeAccount } : {};
         const { error: confirmError, setupIntent } = await stripe.confirmCardSetup(
           clientSecret,
@@ -63,7 +67,7 @@ export const StripeIntegration: React.FC<StripeIntegrationProps> = ({
         } else {
           setError('Payment setup was not successful. Please try again.');
         }
-      } else {
+      } else if (isPaymentIntent) {
         const options = stripeAccount ? { stripeAccount } : {};
         const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
           clientSecret,
@@ -82,6 +86,8 @@ export const StripeIntegration: React.FC<StripeIntegrationProps> = ({
         } else {
           setError('Payment was not successful. Please try again.');
         }
+      } else {
+        setError('Invalid payment secret received.');
       }
     } catch (err: any) {
       console.error('Payment error:', err);
