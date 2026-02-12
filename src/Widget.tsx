@@ -19,29 +19,51 @@ const Widget: React.FC<{ widgetId: string }> = ({ widgetId }) => {
       return;
     }
 
-    fetch(`https://esign-admin.signmary.com/api/widgets/widget-data/public/${widgetId}/`)
-      .then(res => {
-        if (!res.ok) throw new Error("Widget not found");
-        return res.json();
-      })
-      .then(result => {
-        const innerData = result.data.data;
-        const appearance = innerData.appearance;
-        
-        // Store the actual widget ID from the response
-        setActualWidgetId(result.data.id);
+    // Try mypowerly.com first, then fallback to esign-admin.signmary.com
+    const apiUrls = [
+      `https://mypowerly.com/v1/api/widgets/widget-data/public/${widgetId}/`,
+      `https://esign-admin.signmary.com/api/widgets/widget-data/public/${widgetId}/`
+    ];
 
-        setContent({
-          type: result.data.type,
-          data: innerData,
-          appearance: appearance
+    let fetchAttempt = 0;
+
+    const tryFetch = () => {
+      const apiUrl = apiUrls[fetchAttempt];
+      console.log('Fetching widget from:', apiUrl);
+
+      fetch(apiUrl)
+        .then(res => {
+          if (!res.ok) throw new Error("Widget not found");
+          return res.json();
+        })
+        .then(result => {
+          console.log('API Response:', result);
+          
+          const innerData = result.data.data;
+          const appearance = innerData.appearance;
+          
+          setActualWidgetId(result.data.id);
+
+          setContent({
+            type: result.data.type,
+            data: innerData,
+            appearance: appearance
+          });
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(`Failed to load from ${apiUrl}:`, err);
+          fetchAttempt++;
+          if (fetchAttempt < apiUrls.length) {
+            tryFetch();
+          } else {
+            setContent(null);
+            setLoading(false);
+          }
         });
-      })
-      .catch(err => {
-        console.error("Failed to load widget:", err);
-        setContent(null);
-      })
-      .finally(() => setLoading(false));
+    };
+
+    tryFetch();
   }, [widgetId]);
 
   if (loading) {
