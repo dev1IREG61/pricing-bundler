@@ -197,7 +197,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
           justifyContent: 'center',
           maxWidth: '1200px',
           margin: '0 auto',
-          padding: '0 16px'
+          padding: '0 16px 40px 16px'
         }}
       >
         {activeCards.map((card: any, i: number) => (
@@ -356,7 +356,8 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                 textAlign: 'left',
                 margin: '28px 0',
                 paddingLeft: 'clamp(16px, 3vw, 24px)',
-                flexGrow: 1
+                flexGrow: 1,
+                minHeight: 'clamp(200px, 35vw, 280px)'
               }}>
                 {card.features?.map((f: any, fi: number) => (
                   <li key={fi} style={{
