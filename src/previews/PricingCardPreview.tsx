@@ -190,10 +190,10 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
           display: 'grid',
           gap: 'clamp(20px, 3vw, 32px)',
           gridTemplateColumns: activeCards.length === 1
-            ? 'minmax(300px, 400px)'
+            ? '1fr'
             : activeCards.length === 2
-              ? 'repeat(auto-fit, minmax(min(100%, 300px), 400px))'
-              : 'repeat(auto-fit, minmax(300px, 1fr))',
+              ? 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))'
+              : 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
           justifyContent: 'center',
           maxWidth: '1200px',
           margin: '0 auto',
