@@ -197,7 +197,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
           justifyContent: 'center',
           maxWidth: '1200px',
           margin: '0 auto',
-          padding: '0 16px 40px 16px'
+          padding: '0 16px'
         }}
       >
         {activeCards.map((card: any, i: number) => (
