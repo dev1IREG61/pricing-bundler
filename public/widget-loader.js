@@ -250,12 +250,12 @@
     if (!slug) return;
 
     // Look for existing container with correct ID
-    let container = document.getElementById('widget-' + slug);
+    let container = document.getElementById(slug);
 
     // If not found, create fallback at bottom (safety)
     if (!container) {
       container = document.createElement('div');
-      container.id = 'widget-' + slug;
+      container.id = slug;
       document.body.appendChild(container);
     }
 
