@@ -223,23 +223,56 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
               e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.1)';
             }}
           >
-            {/* Image */}
-            {card.imageUrl && (
-              <div style={{ position: 'relative', height: 'clamp(160px, 30vw, 200px)', overflow: 'hidden' }}>
-                <img
-                  src={card.imageUrl}
-                  alt={card.title}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    transition: 'transform 0.4s ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                />
-              </div>
-            )}
+            {/* Media - Support both old imageUrl and new media field */}
+            {(() => {
+              const media = card.media || (card.imageUrl ? { type: "image", url: card.imageUrl } : null);
+              
+              if (!media) return null;
+
+              return (
+                <div style={{ position: 'relative', aspectRatio: '16/9', overflow: 'hidden', backgroundColor: '#000' }}>
+                  {media.type === "youtube" ? (
+                    <iframe
+                      src={`${media.url}?autoplay=1&loop=1&mute=1&controls=0&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&playlist=${media.youtubeId}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        border: 0,
+                        pointerEvents: 'none'
+                      }}
+                      allow="autoplay; encrypted-media"
+                    />
+                  ) : media.type === "video" ? (
+                    <video
+                      src={media.url}
+                      poster={media.poster}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={media.url}
+                      alt={card.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        transition: 'transform 0.4s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                    />
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Content */}
             <div style={{

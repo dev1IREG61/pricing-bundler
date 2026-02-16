@@ -6,6 +6,13 @@ interface Plan {
   price: string;
   period: string;
   imageUrl?: string | null;
+  media?: {
+    type: "image" | "video" | "youtube";
+    url: string;
+    poster?: string;
+    duration?: number;
+    youtubeId?: string;
+  };
   buttonText: string;
   buttonCaption?: string;
   buttonLink?: string;
@@ -123,11 +130,35 @@ export const ComparisonTablePreview: React.FC<ComparisonTablePreviewProps> = ({ 
             <div />
             {data.plans.map((plan, i) => (
               <div key={i} style={{ textAlign: "center" }}>
-                {plan.imageUrl && (
-                  <div style={{ marginBottom: "20px", borderRadius: "16px", overflow: "hidden", boxShadow: "0 8px 20px rgba(0,0,0,0.1)" }}>
-                    <img src={plan.imageUrl} alt={plan.name} style={{ width: "100%", height: "180px", objectFit: "cover" }} />
-                  </div>
-                )}
+                {(() => {
+                  const media = plan.media || (plan.imageUrl ? { type: "image" as const, url: plan.imageUrl } : null);
+                  
+                  if (!media) return null;
+
+                  return (
+                    <div style={{ marginBottom: "20px", borderRadius: "16px", overflow: "hidden", boxShadow: "0 8px 20px rgba(0,0,0,0.1)", aspectRatio: "16/9", backgroundColor: "#000" }}>
+                      {media.type === "youtube" ? (
+                        <iframe
+                          src={`${media.url}?autoplay=1&loop=1&mute=1&controls=0&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&playlist=${media.youtubeId}`}
+                          style={{ width: "100%", height: "100%", border: 0, pointerEvents: 'none' }}
+                          allow="autoplay; encrypted-media"
+                        />
+                      ) : media.type === "video" ? (
+                        <video
+                          src={media.url}
+                          poster={media.poster}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      ) : (
+                        <img src={media.url} alt={plan.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div style={{
                   backgroundColor: plan.headerColor || app.primaryColor || '#3b82f6',
@@ -328,11 +359,35 @@ export const ComparisonTablePreview: React.FC<ComparisonTablePreviewProps> = ({ 
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
             }}>
               {/* Plan Header */}
-              {plan.imageUrl && (
-                <div style={{ width: '100%' }}>
-                  <img src={plan.imageUrl} alt={plan.name} style={{ width: '100%', height: '160px', objectFit: 'cover' }} />
-                </div>
-              )}
+              {(() => {
+                const media = plan.media || (plan.imageUrl ? { type: "image" as const, url: plan.imageUrl } : null);
+                
+                if (!media) return null;
+
+                return (
+                  <div style={{ width: '100%', aspectRatio: "16/9", backgroundColor: "#000" }}>
+                    {media.type === "youtube" ? (
+                      <iframe
+                        src={`${media.url}?autoplay=1&loop=1&mute=1&controls=0&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&playlist=${media.youtubeId}`}
+                        style={{ width: '100%', height: '100%', border: 0, pointerEvents: 'none' }}
+                        allow="autoplay; encrypted-media"
+                      />
+                    ) : media.type === "video" ? (
+                      <video
+                        src={media.url}
+                        poster={media.poster}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <img src={media.url} alt={plan.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    )}
+                  </div>
+                );
+              })()}
 
               <div style={{
                 padding: '20px',
