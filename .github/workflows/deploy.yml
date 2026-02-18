@@ -50,7 +50,8 @@ jobs:
 
       - name: Deploy to Apache Server
         run: |
-          scp -i ~/.ssh/id_ed25519 -r dist/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/pricing-bundlers
+          scp -i ~/.ssh/id_ed25519 -r dist/* ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/pricing-bundlers/
+          # Note: I changed dist/ to dist/* to copy contents, not the folder itself
 
       - name: Restart Apache
         run: |
