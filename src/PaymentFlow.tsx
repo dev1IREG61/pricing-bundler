@@ -19,16 +19,58 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
 }) => {
   const [step, setStep] = useState<'methods' | 'stripe' | 'success'>('methods');
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState('');
   const [paymentIntentId, setPaymentIntentId] = useState('');
   const [backendPaymentType, setBackendPaymentType] = useState<'subscription' | 'payment' | 'one_time'>('subscription');
   const [stripeAccount, setStripeAccount] = useState<string>();
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    setEmailError('');
+    
+    if (value && !validateEmail(value)) {
+      setEmailError('Please enter a valid email address');
+    }
+  };
+
+  const extractErrorMessage = (errorResponse: any): string => {
+    if (errorResponse.error) {
+      // Extract meaningful error from Stripe error messages
+      if (errorResponse.error.includes('Invalid email address')) {
+        return 'Please enter a valid email address';
+      }
+      if (errorResponse.error.includes('customer')) {
+        return 'Customer information is invalid';
+      }
+      if (errorResponse.error.includes('payment')) {
+        return 'Payment processing failed. Please try again.';
+      }
+      // Return the actual error message if it's user-friendly
+      const errorParts = errorResponse.error.split(': ');
+      return errorParts.length > 1 ? errorParts[errorParts.length - 1] : errorResponse.error;
+    }
+    return errorResponse.message || 'An unexpected error occurred';
+  };
+
   const handlePaymentMethodSelect = async (method: string) => {
     if (method !== 'credit_card' || !email) return;
     
+    // Validate email before proceeding
+    if (!validateEmail(email)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+    
     setLoading(true);
+    setEmailError('');
+    
     try {
       const payload: any = {
         widget_id: widgetId,
@@ -55,11 +97,12 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
         setStripeAccount(data.stripe_account);
         setStep('stripe');
       } else {
-        alert(data.message || 'Payment creation failed');
+        const errorMessage = extractErrorMessage(data);
+        alert(errorMessage);
       }
     } catch (error) {
       console.error('Payment creation failed:', error);
-      alert('Network error. Please try again.');
+      alert('Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -126,17 +169,32 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
         <input
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => handleEmailChange(e.target.value)}
           placeholder="Enter your email"
           style={{
             width: '100%',
             padding: '12px',
-            border: '1px solid #d1d5db',
+            border: `1px solid ${emailError ? '#ef4444' : '#d1d5db'}`,
             borderRadius: '8px',
-            fontSize: '16px'
+            fontSize: '16px',
+            outline: 'none'
           }}
           required
+          pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+          maxLength={254}
         />
+        {emailError && (
+          <div style={{ 
+            color: '#ef4444', 
+            fontSize: '14px', 
+            marginTop: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            ⚠️ {emailError}
+          </div>
+        )}
       </div>
 
       <div style={{ marginBottom: '24px' }}>
@@ -147,7 +205,7 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <button
             onClick={() => handlePaymentMethodSelect('credit_card')}
-            disabled={!email || loading}
+            disabled={!email || loading || !!emailError}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -155,9 +213,9 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
               padding: '16px',
               border: '2px solid #e5e7eb',
               borderRadius: '8px',
-              background: email ? '#fff' : '#f9fafb',
-              cursor: email ? 'pointer' : 'not-allowed',
-              opacity: email ? 1 : 0.6,
+              background: (email && !emailError) ? '#fff' : '#f9fafb',
+              cursor: (email && !emailError) ? 'pointer' : 'not-allowed',
+              opacity: (email && !emailError) ? 1 : 0.6,
               transition: 'all 0.2s'
             }}
           >
