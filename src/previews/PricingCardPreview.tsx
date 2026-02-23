@@ -118,6 +118,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
           margin: '0 auto',
           padding: '20px',
           boxSizing: 'border-box',
+          direction: appearance.isRTL ? 'rtl' : 'ltr',
         }}
       >
         {/* Global Widget Title */}
@@ -343,7 +344,18 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                           fontSize: 'clamp(1.2em, 3vw, 1.5em)',
                           textDecoration: 'line-through', opacity: 0.8,
                         }}>
-                          {data.currency === 'usd' && !card.oldPrice?.startsWith('$') ? '$' : ''}{card.oldPrice}
+                          {(() => {
+                            const currencySymbols: Record<string, string> = {
+                              usd: '$', eur: '€', gbp: '£', jpy: '¥', cad: '$', aud: '$', chf: 'Fr', cny: '¥',
+                              inr: '₹', krw: '₩', brl: 'R$', rub: '₽', mxn: '$', zar: 'R', sgd: '$', hkd: '$',
+                              nok: 'kr', sek: 'kr', dkk: 'kr', pln: 'zł', thb: '฿', idr: 'Rp', myr: 'RM',
+                              php: '₱', try: '₺', aed: 'د.إ', sar: '﷼', ils: '₪', nzd: '$', twd: 'NT$'
+                            };
+                            const currency = data.globalCurrency || card.currency || 'usd';
+                            const symbol = currencySymbols[currency.toLowerCase()] || '$';
+                            const priceNum = card.oldPrice?.replace(/[^0-9.]/g, '') || '';
+                            return `${symbol}${priceNum}`;
+                          })()}
                         </div>
                       )}
                       {card.discountLabel && (
@@ -365,7 +377,18 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                     <span style={{
                       fontSize: 'clamp(2.2em, 6vw, 3.2em)', fontWeight: '800', color: card.priceColor,
                     }}>
-                      {data.currency === 'usd' ? `$${card.price?.replace(/[^0-9.]/g, '') || ''}` : card.price}
+                      {(() => {
+                        const currencySymbols: Record<string, string> = {
+                          usd: '$', eur: '€', gbp: '£', jpy: '¥', cad: '$', aud: '$', chf: 'Fr', cny: '¥',
+                          inr: '₹', krw: '₩', brl: 'R$', rub: '₽', mxn: '$', zar: 'R', sgd: '$', hkd: '$',
+                          nok: 'kr', sek: 'kr', dkk: 'kr', pln: 'zł', thb: '฿', idr: 'Rp', myr: 'RM',
+                          php: '₱', try: '₺', aed: 'د.إ', sar: '﷼', ils: '₪', nzd: '$', twd: 'NT$'
+                        };
+                        const currency = data.globalCurrency || card.currency || 'usd';
+                        const symbol = currencySymbols[currency.toLowerCase()] || '$';
+                        const priceNum = card.price?.replace(/[^0-9.]/g, '') || '';
+                        return `${symbol}${priceNum}`;
+                      })()}
                     </span>
                     <span style={{
                       fontSize: 'clamp(1em, 2.5vw, 1.3em)', opacity: 0.7, marginLeft: '4px', color: card.priceColor,
@@ -403,9 +426,9 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
                         gap: '12px', minHeight: '40px'
                       }}>
                         <span style={{
-                          color: secondaryColor || '#10B981',
+                          color: primaryColor,
                           fontSize: 'clamp(1.2em, 2.5vw, 1.4em)',
-                          fontWeight: 'bold', flexShrink: 0
+                          flexShrink: 0
                         }}>{f.icon || '✓'}</span>
                         <span style={{
                           fontSize: 'clamp(0.95em, 2vw, 1.02em)',
