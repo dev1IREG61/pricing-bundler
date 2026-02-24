@@ -188,7 +188,6 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({
         </div>
       )}
 
-      {/* Tabs for Multi-Table Mode */}
       {isMultiTable && tables.length > 1 && (
         <div
           style={{
