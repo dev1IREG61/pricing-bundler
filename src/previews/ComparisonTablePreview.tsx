@@ -39,6 +39,7 @@ interface AppearanceSettings {
   buttonType: "filled" | "outline" | "gradient";
   categoryTextColor?: string;
   isRTL?: boolean;
+  enableBrowserTranslator?: boolean;
 }
 
 interface ComparisonTablePreviewProps {
@@ -114,6 +115,7 @@ export const ComparisonTablePreview: React.FC<ComparisonTablePreviewProps> = ({ 
       <style>{styles}</style>
       <div
         className="ct-wrap"
+        translate={app.enableBrowserTranslator ? 'yes' : 'no'}
         style={{
           fontFamily: app.font === "system-ui" ? "system-ui, sans-serif" : `"${app.font}", sans-serif`,
           fontWeight: app.fontWeight,
@@ -123,8 +125,34 @@ export const ComparisonTablePreview: React.FC<ComparisonTablePreviewProps> = ({ 
           padding: '20px',
           boxSizing: 'border-box',
           direction: app.isRTL ? 'rtl' : 'ltr',
+          position: 'relative',
         }}
       >
+        {/* Translate Tooltip */}
+        {app.enableBrowserTranslator && (
+          <div
+            title="Right-click anywhere to translate this page"
+            style={{
+              position: 'fixed',
+              bottom: '20px',
+              right: '20px',
+              width: '40px',
+              height: '40px',
+              backgroundColor: '#4285f4',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              cursor: 'help',
+              zIndex: 1000,
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+              <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
+            </svg>
+          </div>
+        )}
         <h3 style={{
           textAlign: "center",
           marginBottom: "40px",

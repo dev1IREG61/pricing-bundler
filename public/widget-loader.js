@@ -7,11 +7,10 @@
     // Look for existing container with correct ID
     let container = document.getElementById(slug);
 
-    // If not found, create fallback at bottom (safety)
+    // If container doesn't exist, don't create fallback - just exit
     if (!container) {
-      container = document.createElement('div');
-      container.id = slug;
-      document.body.appendChild(container);
+      console.warn('Widget container not found. Please add: <div id="' + slug + '"></div>');
+      return;
     }
 
     // Clear loading message
