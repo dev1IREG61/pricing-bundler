@@ -96,6 +96,8 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
         planId={selectedPlan.planId}
         interval={data.interval}
         paymentType={data.paymentType || 'one_time'}
+        collectTaxDocuments={appearance.collectTaxDocuments}
+        widgetBackgroundColor={appearance.widgetBackgroundColor}
         onBack={() => {
           setShowPaymentFlow(false);
           setSelectedPlan(null);
@@ -121,33 +123,83 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
           boxSizing: 'border-box',
           direction: appearance.isRTL ? 'rtl' : 'ltr',
           position: 'relative',
+          backgroundColor: appearance.widgetBackgroundColor || 'transparent',
         }}
       >
-        {/* Translate Tooltip */}
+        {/* Translate Button */}
         {appearance.enableBrowserTranslator && (
           <div
-            title="Right-click anywhere to translate this page"
+            id="google_translate_element"
             style={{
-              position: 'fixed',
-              bottom: '20px',
+              position: 'absolute',
+              top: '20px',
               right: '20px',
-              width: '40px',
-              height: '40px',
-              backgroundColor: '#4285f4',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              cursor: 'help',
               zIndex: 1000,
             }}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-              <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
-            </svg>
+            <button
+              onClick={() => {
+                const translateElement = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+                if (translateElement) {
+                  translateElement.dispatchEvent(new Event('click'));
+                } else {
+                  if (!(window as any).googleTranslateElementInit) {
+                    (window as any).googleTranslateElementInit = function() {
+                      new (window as any).google.translate.TranslateElement(
+                        {pageLanguage: 'en'},
+                        'google_translate_element'
+                      );
+                    };
+                    const script = document.createElement('script');
+                    script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+                    document.head.appendChild(script);
+                  }
+                }
+              }}
+              title="Translate this page"
+              style={{
+                width: '48px',
+                height: '48px',
+                backgroundColor: '#4285f4',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                cursor: 'pointer',
+                border: 'none',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.1)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
+              </svg>
+            </button>
           </div>
         )}
+        <style>{`
+          @media (max-width: 640px) {
+            #google_translate_element {
+              top: 10px !important;
+              right: 10px !important;
+            }
+            #google_translate_element button {
+              width: 40px !important;
+              height: 40px !important;
+            }
+            #google_translate_element .skiptranslate {
+              max-width: calc(100vw - 80px) !important;
+            }
+          }
+        `}</style>
         {/* Global Widget Title */}
         {(data.showWidgetTitle && !isMultiTable) && (
           <div style={{ textAlign: 'center', marginBottom: '48px', padding: '0 16px' }}>

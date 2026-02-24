@@ -6,6 +6,8 @@ interface StripeIntegrationProps {
   clientSecret: string;
   paymentType?: 'subscription' | 'payment' | 'one_time';
   stripeAccount?: string;
+  collectTaxDocuments?: boolean;
+  widgetBackgroundColor?: string;
   onSuccess: () => void;
   onBack: () => void;
 }
@@ -14,6 +16,8 @@ export const StripeIntegration: React.FC<StripeIntegrationProps> = ({
   clientSecret,
   paymentType = 'subscription',
   stripeAccount,
+  collectTaxDocuments,
+  widgetBackgroundColor,
   onSuccess,
   onBack
 }) => {
@@ -103,7 +107,7 @@ export const StripeIntegration: React.FC<StripeIntegrationProps> = ({
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f9fafb 0%, #eff6ff 100%)',
+      background: widgetBackgroundColor || 'linear-gradient(135deg, #f9fafb 0%, #eff6ff 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -169,6 +173,25 @@ export const StripeIntegration: React.FC<StripeIntegrationProps> = ({
           }}>
             Your payment information is encrypted and secure
           </p>
+          {collectTaxDocuments && (
+            <p style={{
+              fontSize: '14px',
+              color: '#6b7280',
+              marginTop: '12px'
+            }}>
+              <a 
+                href="#" 
+                onClick={(e) => { e.preventDefault(); alert('Tax document link will be configured by admin'); }}
+                style={{
+                  color: '#7c3aed',
+                  textDecoration: 'underline',
+                  cursor: 'pointer'
+                }}
+              >
+                Click here to get a Copy of my W9/W8BEN
+              </a>
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit}>

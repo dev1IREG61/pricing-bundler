@@ -8,6 +8,8 @@ interface PaymentFlowProps {
   planId: string;
   interval?: string;
   paymentType: string;
+  collectTaxDocuments?: boolean;
+  widgetBackgroundColor?: string;
   onBack: () => void;
 }
 
@@ -16,6 +18,8 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
   planId,
   interval,
   paymentType,
+  collectTaxDocuments,
+  widgetBackgroundColor,
   onBack
 }) => {
   const [step, setStep] = useState<'methods' | 'stripe' | 'success'>('methods');
@@ -174,6 +178,8 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
           clientSecret={clientSecret}
           paymentType={backendPaymentType}
           stripeAccount={stripeAccount}
+          collectTaxDocuments={collectTaxDocuments}
+          widgetBackgroundColor={widgetBackgroundColor}
           onSuccess={handleStripeSuccess}
           onBack={() => setStep('methods')}
         />
@@ -184,7 +190,7 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f9fafb 0%, #eff6ff 100%)',
+      background: widgetBackgroundColor || 'linear-gradient(135deg, #f9fafb 0%, #eff6ff 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -231,6 +237,27 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
         }}>
           Complete Your Purchase
         </h2>
+
+        {collectTaxDocuments && (
+          <p style={{
+            fontSize: '14px',
+            color: '#6b7280',
+            textAlign: 'center',
+            marginBottom: '24px'
+          }}>
+            <a 
+              href="#" 
+              onClick={(e) => { e.preventDefault(); alert('Tax document link will be configured by admin'); }}
+              style={{
+                color: '#7c3aed',
+                textDecoration: 'underline',
+                cursor: 'pointer'
+              }}
+            >
+              Click here to get a Copy of my W9/W8BEN
+            </a>
+          </p>
+        )}
 
         <div style={{ marginBottom: '32px' }}>
           <label style={{
