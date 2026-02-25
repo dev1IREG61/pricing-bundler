@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,10 +20,12 @@ jobs:
           node-version: "20.x"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build project
         run: npm run build
+        env:
+          NODE_ENV: production
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -46,12 +49,23 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Debug - List files before deploy
+        run: |
+          echo "Files to deploy:"
+          ls -la dist/
+          echo "Total files: $(find dist/ -type f | wc -l)"
 
       - name: Deploy to Apache Server
         run: |
-          scp -i ~/.ssh/id_ed25519 -r dist/ ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/var/www/pricing-bundlers
+          echo "Deploying to ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/var/www/pricing-bundlers/"
+          scp -i ~/.ssh/id_ed25519 -r dist/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/var/www/pricing-bundlers/
+
+      - name: Verify deployment
+        run: |
+          ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "ls -la /var/www/pricing-bundlers/ && echo 'Total files: ' \$(find /var/www/pricing-bundlers/ -type f | wc -l)"
 
       - name: Restart Apache
         run: |
-          ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "sudo systemctl restart apache2"
+          ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "sudo systemctl restart apache2 && echo 'Apache restarted'"
