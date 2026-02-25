@@ -45,27 +45,47 @@ jobs:
           path: dist/
 
       - name: Set up SSH
+        env:
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          
+          # Debug: Show that we have the host (first few chars only)
+          echo "Host: ${SSH_HOST:0:5}..."
+          
+          # Add host to known_hosts - using the environment variable
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>&1
+          
+          echo "SSH setup completed"
 
-      - name: Debug - List files before deploy
+      - name: Test SSH Connection
+        env:
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_USER: ${{ secrets.VPS_USERNAME }}
         run: |
-          echo "Files to deploy:"
-          ls -la dist/
-          echo "Total files: $(find dist/ -type f | wc -l)"
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${SSH_USER}@${SSH_HOST} "echo '✅ SSH connection successful'"
 
       - name: Deploy to Apache Server
+        env:
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_USER: ${{ secrets.VPS_USERNAME }}
         run: |
-          echo "Deploying to ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/var/www/pricing-bundlers/"
-          scp -i ~/.ssh/id_ed25519 -r dist/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/var/www/pricing-bundlers/
+          echo "Deploying files to ${SSH_USER}@${SSH_HOST}:/var/www/pricing-bundlers/"
+          scp -i ~/.ssh/id_ed25519 -r dist/* ${SSH_USER}@${SSH_HOST}:/var/www/pricing-bundlers/
 
       - name: Verify deployment
+        env:
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_USER: ${{ secrets.VPS_USERNAME }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "ls -la /var/www/pricing-bundlers/ && echo 'Total files: ' \$(find /var/www/pricing-bundlers/ -type f | wc -l)"
+          ssh -i ~/.ssh/id_ed25519 ${SSH_USER}@${SSH_HOST} "ls -la /var/www/pricing-bundlers/ && echo 'Total files: ' \$(find /var/www/pricing-bundlers/ -type f | wc -l)"
 
       - name: Restart Apache
+        env:
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_USER: ${{ secrets.VPS_USERNAME }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "sudo systemctl restart apache2 && echo 'Apache restarted'"
+          ssh -i ~/.ssh/id_ed25519 ${SSH_USER}@${SSH_HOST} "sudo systemctl restart apache2 && echo '✅ Apache restarted'"
