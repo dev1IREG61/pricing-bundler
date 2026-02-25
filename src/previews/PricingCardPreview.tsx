@@ -203,14 +203,16 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({ data, ap
         {/* Global Widget Title */}
         {(data.showWidgetTitle && !isMultiTable) && (
           <div style={{ textAlign: 'center', marginBottom: '48px', padding: '0 16px' }}>
-            <h2 style={{
-              fontSize: 'clamp(1.8em, 5vw, 2.8em)',
-              fontWeight: '800',
-              margin: '0 0 12px 0',
-              color: data.widgetTitleColor || primaryColor
-            }}>
-              {data.widgetTitle || 'Choose Your Plan'}
-            </h2>
+            {data.widgetTitle && (
+              <h2 style={{
+                fontSize: 'clamp(1.8em, 5vw, 2.8em)',
+                fontWeight: '800',
+                margin: '0 0 12px 0',
+                color: data.widgetTitleColor || primaryColor
+              }}>
+                {data.widgetTitle}
+              </h2>
+            )}
             {data.widgetTitleCaption && (
               <p style={{
                 fontSize: 'clamp(1em, 3vw, 1.3em)',
