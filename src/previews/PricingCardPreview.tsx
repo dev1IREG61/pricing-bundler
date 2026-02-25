@@ -492,6 +492,54 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({
                   minHeight: "clamp(200px, 35vw, 280px)",
                 }}
               >
+                {card.features?.some(
+                  (f: any) =>
+                    f.dynamicPricing &&
+                    sliderValues[`${i}-${card.features.indexOf(f)}`],
+                ) && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "10px",
+                      flexWrap: "wrap",
+                      gap: "6px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 500,
+                        color: "#6B7280",
+                      }}
+                    >
+                      Features
+                    </span>
+                    <button
+                      onClick={() => {
+                        const newSliderValues = { ...sliderValues };
+                        card.features.forEach((_: any, fi: number) => {
+                          delete newSliderValues[`${i}-${fi}`];
+                        });
+                        setSliderValues(newSliderValues);
+                        setPrices((prev) => ({ ...prev, [i]: card.price }));
+                        setActiveSlider(null);
+                      }}
+                      style={{
+                        fontSize: "11px",
+                        padding: "3px 8px",
+                        backgroundColor: "#EF4444",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Reset All
+                    </button>
+                  </div>
+                )}
                 {card.features?.map((f: any, fi: number) => (
                   <li
                     key={fi}
@@ -544,7 +592,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({
                               flexShrink: 0,
                             }}
                           >
-                            ✓
+                            {f.icon || "✓"}
                           </span>
                           <span
                             style={{
@@ -570,7 +618,6 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({
                               }}
                             >
                               {sliderValues[`${i}-${fi}`]}
-                              {f.unitLabel && ` ${f.unitLabel}`}
                             </span>
                           )}
                         </button>
@@ -601,17 +648,6 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({
                                   }}
                                 >
                                   {f.text}
-                                  {f.unitLabel && (
-                                    <span
-                                      style={{
-                                        color: "#6B7280",
-                                        fontWeight: 400,
-                                      }}
-                                    >
-                                      {" "}
-                                      ({f.unitLabel})
-                                    </span>
-                                  )}
                                 </label>
                                 <input
                                   type="range"
@@ -657,7 +693,6 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({
                                     {sliderValues[`${i}-${fi}`] ||
                                       f.defaultValue ||
                                       1}
-                                    {f.unitLabel && ` ${f.unitLabel}`}
                                   </span>
                                   <span>{f.maxValue || 10}</span>
                                 </div>
@@ -707,7 +742,7 @@ export const PricingCardPreview: React.FC<PricingCardPreviewProps> = ({
                             flexShrink: 0,
                           }}
                         >
-                          ✓
+                          {f.icon || "✓"}
                         </span>
                         <span
                           style={{
