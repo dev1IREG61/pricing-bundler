@@ -29,40 +29,62 @@ export const PaymentFlow: React.FC<PaymentFlowProps> = ({
     if (method !== 'credit_card' || !email) return;
     
     setLoading(true);
-    try {
-      const payload: any = {
-        widget_id: widgetId,
-        plan_id: planId,
-        customer_email: email
-      };
-      
-      if (paymentType === 'subscription' && interval) {
-        payload.interval = interval;
-      }
-
-      const response = await fetch('https://esign-admin.signmary.com/api/widgets/stripe/create-payment/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setClientSecret(data.client_secret);
-        setPaymentIntentId(data.payment_intent_id || data.subscription_id);
-        setBackendPaymentType(data.payment_type);
-        setStripeAccount(data.stripe_account);
-        setStep('stripe');
-      } else {
-        alert(data.message || 'Payment creation failed');
-      }
-    } catch (error) {
-      console.error('Payment creation failed:', error);
-      alert('Network error. Please try again.');
-    } finally {
-      setLoading(false);
+    
+    const payload: any = {
+      widget_id: widgetId,
+      plan_id: planId,
+      customer_email: email
+    };
+    
+    if (paymentType === 'subscription' && interval) {
+      payload.interval = interval;
     }
+
+    const apiUrls = [
+      'https://mypowerly.com/v1/api/widgets/stripe/create-payment/',
+      'https://esign-admin.signmary.com/api/widgets/stripe/create-payment/'
+    ];
+
+    let fetchAttempt = 0;
+
+    const tryFetch = async () => {
+      const apiUrl = apiUrls[fetchAttempt];
+      console.log('Creating payment with:', apiUrl);
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error('Payment creation failed');
+
+        const data = await response.json();
+        
+        if (data.success) {
+          setClientSecret(data.client_secret);
+          setPaymentIntentId(data.payment_intent_id || data.subscription_id);
+          setBackendPaymentType(data.payment_type);
+          setStripeAccount(data.stripe_account);
+          setStep('stripe');
+        } else {
+          alert(data.message || 'Payment creation failed');
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error(`Failed to create payment with ${apiUrl}:`, error);
+        fetchAttempt++;
+        if (fetchAttempt < apiUrls.length) {
+          tryFetch();
+        } else {
+          alert('Network error. Please try again.');
+          setLoading(false);
+        }
+      }
+    };
+
+    tryFetch();
   };
 
   const handleStripeSuccess = () => {
