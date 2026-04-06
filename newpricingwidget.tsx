@@ -1,5 +1,5 @@
-import { ArrowLeft, ArrowRight, Atom, Building2, Camera, Dumbbell, Download, Globe, Hexagon, LayoutGrid, LayoutTemplate, Monitor, Palette, Pencil, Search, Sparkles, Star, Tag, Utensils, X, Zap } from "lucide-react";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { ArrowLeft, ArrowRight, Atom, Building2, Camera, Dumbbell, Download, Globe, Hexagon, LayoutGrid, LayoutTemplate, Monitor, Palette, Pencil, Search, Sparkles, Star, Tag, Utensils, X, Zap, BarChart3, Bot, Brain, CheckCircle2, Gauge, Layers3, Link2, MessageSquare, RefreshCw, Rocket, ShieldCheck, Users, WandSparkles, Workflow } from "lucide-react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   getWidgetTemplates,
   getUserWidgets,
@@ -38,6 +38,34 @@ function resolveTransform(node) {
   return parts.length ? parts.join(" ") : undefined;
 }
 
+const ICON_COMPONENTS = {
+    sparkles: Sparkles,
+    zap: Zap,
+    search: Search,
+    brain: Brain,
+    bot: Bot,
+    link: Link2,
+    chart: BarChart3,
+    refresh: RefreshCw,
+    rocket: Rocket,
+    shield: ShieldCheck,
+    layers: Layers3,
+    users: Users,
+    workflow: Workflow,
+    message: MessageSquare,
+    gauge: Gauge,
+    check: CheckCircle2,
+    wand: WandSparkles,
+    globe: Globe,
+    monitor: Monitor,
+    building: Building2,
+    camera: Camera,
+    dumbbell: Dumbbell,
+    tag: Tag,
+    star: Star,
+    grid: LayoutGrid,
+};
+
 function HoverButton({ baseStyle, normalStyle, hoverStyle, text }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -53,7 +81,7 @@ function HoverButton({ baseStyle, normalStyle, hoverStyle, text }) {
 
 let _glowCardId = 0;
 
-function GlowCard({ colors, thickness = 2, speed = 3, blur = 12, borderRadius = 12, children, style }) {
+function GlowCard({ colors, thickness = 2, speed = 3, blur = 12, borderRadius = 12, children, style = {} }) {
   const idRef = useRef(`gc-${++_glowCardId}`);
   const id = idRef.current;
 
@@ -182,6 +210,31 @@ function px(val) {
   return val;
 }
 
+function toNumber(val) {
+  if (val == null || val === "") return undefined;
+  const parsed = Number.parseFloat(`${val}`);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function resolveFlexAlign(val, fallback) {
+  if (val == null) return fallback;
+  const map = {
+    left: "flex-start",
+    right: "flex-end",
+    top: "flex-start",
+    bottom: "flex-end",
+    start: "flex-start",
+    end: "flex-end",
+    center: "center",
+    stretch: "stretch",
+    baseline: "baseline",
+    "space-between": "space-between",
+    "space-around": "space-around",
+    "space-evenly": "space-evenly",
+  };
+  return map[val] || val;
+}
+
 const SPACING_TOKENS = {
   none: 0, xs: 4, sm: 8, md: 16, lg: 24, xl: 40, "2xl": 60, "3xl": 80,
 };
@@ -202,6 +255,34 @@ function resolveSpacing(val) {
     }
   }
   return val;
+}
+
+function compactResolvedSpacing(value, factor = 0.8, min = 10) {
+  if (value == null) return value;
+  if (typeof value === "number") {
+    if (value === 0) return 0;
+    return Math.max(min, Math.round(value * factor));
+  }
+  if (typeof value !== "string") return value;
+  return value
+    .split(/\s+/)
+    .map((part) => {
+      const match = part.match(/^(-?\d*\.?\d+)([a-z%]*)$/i);
+      if (!match) return part;
+      const amount = Number.parseFloat(match[1]);
+      const unit = match[2] || "px";
+      if (!Number.isFinite(amount) || amount === 0) return `${amount || 0}${unit}`;
+      return `${Math.max(min, Math.round(amount * factor))}${unit}`;
+    })
+    .join(" ");
+}
+
+function spacingToNumber(val) {
+  const resolved = resolveSpacing(val);
+  if (typeof resolved === "number") return resolved;
+  if (typeof resolved !== "string") return 0;
+  const parsed = Number.parseFloat(resolved);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function useVisibleOnce(ref) {
@@ -273,6 +354,256 @@ function getCardAnim(animType, idx, total, stagger = 110) {
 // ───────────────────────────────────────────────────────────────────────────
 
 // 1a. Card container CSS — driven by theme.cardStyle
+function clampNumber(value, min, max) {
+    let next = Number.isFinite(Number(value)) ? Number(value) : 0;
+    if (Number.isFinite(Number(min))) next = Math.max(Number(min), next);
+    if (Number.isFinite(Number(max))) next = Math.min(Number(max), next);
+    return next;
+}
+
+function roundToStep(value, step = 1, min = 0) {
+    const safeStep = Number(step) > 0 ? Number(step) : 1;
+    const safeMin = Number.isFinite(Number(min)) ? Number(min) : 0;
+    return Math.round((Number(value) - safeMin) / safeStep) * safeStep + safeMin;
+}
+
+function parsePriceAmount(value) {
+    const parsed = Number.parseFloat(`${value ?? ""}`.replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatPlanAmount(plan, amount) {
+    const parsed = Number(amount) || 0;
+    const source = `${plan?.price ?? ""}`;
+    const decimals = source.includes(".") || Math.abs(parsed % 1) > 0 ? 2 : 0;
+    return parsed.toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: 2,
+    });
+}
+
+function formatPlanDelta(plan, amount) {
+    const parsed = Number(amount) || 0;
+    const sign = parsed >= 0 ? "+" : "-";
+    return `${sign}${plan?.currency || "$"}${formatPlanAmount(plan, Math.abs(parsed))}`;
+}
+
+function getPricingControls(plan) {
+    return Array.isArray(plan?.pricingControls) ? plan.pricingControls : [];
+}
+
+function getControlId(control, idx) {
+    return control?.id || `control_${idx}`;
+}
+
+function getSliderRate(control, value) {
+    const breakpoints = Array.isArray(control?.breakpoints) ? control.breakpoints : [];
+    if (!breakpoints.length) return Number(control?.pricePerUnit) || 0;
+    const numericValue = Number(value) || 0;
+    const ordered = [...breakpoints].sort((a, b) => {
+        const aOpen = a?.upTo == null || a?.upTo === "";
+        const bOpen = b?.upTo == null || b?.upTo === "";
+        if (aOpen && bOpen) return 0;
+        if (aOpen) return 1;
+        if (bOpen) return -1;
+        return Number(a.upTo) - Number(b.upTo);
+    });
+    const match = ordered.find((point) => point?.upTo == null || point?.upTo === "" || numericValue <= Number(point.upTo));
+    return Number(match?.pricePerUnit) || 0;
+}
+
+function getControlPricingMode(control) {
+    return control?.pricingMode
+        || (Array.isArray(control?.breakpoints) && control.breakpoints.length ? "breakpoints" : null)
+        || control?.pricingType
+        || "fixed";
+}
+
+function computeSliderDelta(plan, control, value) {
+    const min = Number(control?.min ?? 0);
+    const max = Number(control?.max ?? min);
+    const defaultValue = Number(control?.defaultValue ?? min);
+    const step = Number(control?.step ?? control?.stepValue ?? 1) || 1;
+    const safeValue = clampNumber(roundToStep(value, step, min), min, max);
+    const stepsFromDefault = (safeValue - defaultValue) / step;
+    const pricingMode = getControlPricingMode(control);
+    const rate = getSliderRate(control, safeValue);
+    const baseAmount = parsePriceAmount(plan?.price);
+
+    if (pricingMode === "percentage") {
+        return baseAmount * ((stepsFromDefault * rate) / 100);
+    }
+
+    return stepsFromDefault * rate;
+}
+
+function buildInteractivePlanState(plans) {
+    const next = {};
+    (plans || []).forEach((plan) => {
+        const controls = getPricingControls(plan);
+        next[plan.id] = {};
+        controls.forEach((control, idx) => {
+            const controlId = getControlId(control, idx);
+            const min = Number(control?.min ?? 0);
+            const max = Number(control?.max ?? min);
+            const defaultValue = Number(control?.defaultValue ?? min);
+            const step = Number(control?.step ?? control?.stepValue ?? 1) || 1;
+            next[plan.id][controlId] = {
+                enabled: control?.defaultSelected !== false,
+                value: clampNumber(roundToStep(defaultValue, step, min), min, max),
+            };
+        });
+    });
+    return next;
+}
+
+function computeInteractivePlan(plan, planState) {
+    const controls = getPricingControls(plan);
+    if (!controls.length) {
+        return {
+            ...plan,
+            _interactive: {
+                basePrice: parsePriceAmount(plan.price),
+                totalPrice: parsePriceAmount(plan.price),
+                totalPriceLabel: formatPlanAmount(plan, parsePriceAmount(plan.price)),
+                controls: [],
+            },
+        };
+    }
+
+    const basePrice = parsePriceAmount(plan.price);
+    let totalPrice = basePrice;
+
+    const resolvedControls = controls.map((control, idx) => {
+        const controlId = getControlId(control, idx);
+        const currentState = planState?.[controlId] || {};
+        const type = control?.type || "toggle";
+        const enabled = type === "slider" ? (control?.removable ? currentState.enabled !== false : true) : currentState.enabled !== false;
+
+        if (type === "slider") {
+            const min = Number(control?.min ?? 0);
+            const max = Number(control?.max ?? min);
+            const step = Number(control?.step ?? control?.stepValue ?? 1) || 1;
+            const defaultValue = Number(control?.defaultValue ?? min);
+            const value = clampNumber(roundToStep(currentState.value ?? defaultValue, step, min), min, max);
+            const delta = enabled ? computeSliderDelta(plan, control, value) : 0;
+            totalPrice += delta;
+
+            return {
+                ...control,
+                id: controlId,
+                type: "slider",
+                enabled,
+                value,
+                min,
+                max,
+                step,
+                defaultValue,
+                delta,
+            };
+        }
+
+        const priceDelta = Number(control?.priceDelta ?? control?.pricePerUnit ?? 0);
+        const delta = enabled ? priceDelta : 0;
+        totalPrice += delta;
+
+        return {
+            ...control,
+            id: controlId,
+            type: "toggle",
+            enabled,
+            delta,
+        };
+    });
+
+    return {
+        ...plan,
+        _interactive: {
+            basePrice,
+            totalPrice,
+            totalPriceLabel: formatPlanAmount(plan, totalPrice),
+            controls: resolvedControls,
+        },
+    };
+}
+
+function useInteractivePlans(plans) {
+    const controlsSignature = JSON.stringify((plans || []).map((plan) => ({
+        id: plan?.id,
+        price: plan?.price,
+        pricingControls: getPricingControls(plan),
+    })));
+
+    const [planStates, setPlanStates] = useState(() => buildInteractivePlanState(plans));
+
+    useEffect(() => {
+        setPlanStates(buildInteractivePlanState(plans));
+    }, [controlsSignature]);
+
+    const computedPlans = useMemo(
+        () => (plans || []).map((plan) => computeInteractivePlan(plan, planStates?.[plan.id] || {})),
+        [plans, planStates]
+    );
+
+    const updateSlider = useCallback((planId, controlId, control, nextValue) => {
+        const min = Number(control?.min ?? 0);
+        const max = Number(control?.max ?? min);
+        const step = Number(control?.step ?? control?.stepValue ?? 1) || 1;
+        const rounded = clampNumber(roundToStep(nextValue, step, min), min, max);
+
+        setPlanStates((prev) => ({
+            ...prev,
+            [planId]: {
+                ...(prev?.[planId] || {}),
+                [controlId]: {
+                    ...(prev?.[planId]?.[controlId] || {}),
+                    value: rounded,
+                },
+            },
+        }));
+    }, []);
+
+    const toggleControl = useCallback((planId, controlId) => {
+        setPlanStates((prev) => ({
+            ...prev,
+            [planId]: {
+                ...(prev?.[planId] || {}),
+                [controlId]: {
+                    ...(prev?.[planId]?.[controlId] || {}),
+                    enabled: !(prev?.[planId]?.[controlId]?.enabled ?? true),
+                },
+            },
+        }));
+    }, []);
+
+    const resetPlan = useCallback((plan) => {
+        const controls = getPricingControls(plan);
+        setPlanStates((prev) => {
+            const next = { ...(prev || {}) };
+            next[plan.id] = {};
+            controls.forEach((control, idx) => {
+                const controlId = getControlId(control, idx);
+                const min = Number(control?.min ?? 0);
+                const max = Number(control?.max ?? min);
+                const step = Number(control?.step ?? control?.stepValue ?? 1) || 1;
+                const defaultValue = Number(control?.defaultValue ?? min);
+                next[plan.id][controlId] = {
+                    enabled: control?.defaultSelected !== false,
+                    value: clampNumber(roundToStep(defaultValue, step, min), min, max),
+                };
+            });
+            return next;
+        });
+    }, []);
+
+    return {
+        computedPlans,
+        updateSlider,
+        toggleControl,
+        resetPlan,
+    };
+}
+
 function resolveCardCSS(theme, plan) {
   const isHighlighted = plan.highlighted;
   const isDark = theme.colorMode === "dark";
@@ -419,153 +750,348 @@ function resolveHeader(plan, theme) {
 
 // 1d. Price block — driven by theme.priceDisplay
 function resolvePrice(plan, theme) {
-  const onFullColor = theme.cardStyle === "full-color";
-  const onDark = theme.colorMode === "dark" || theme.cardStyle === "glass" || theme.cardStyle === "image-bg" || onFullColor;
-  const mainColor = onFullColor ? "#fff" : onDark ? "#fff" : "#111";
-  const accentColor = onFullColor ? "rgba(255,255,255,0.8)" : plan.color;
-  const mutedColor = onFullColor ? "rgba(255,255,255,0.6)" : onDark ? "rgba(255,255,255,0.5)" : "#9ca3af";
-  const priceAlign = theme.priceAlign ?? "left";
+    const onFullColor = theme.cardStyle === "full-color";
+    const onDark = theme.colorMode === "dark" || theme.cardStyle === "glass" || theme.cardStyle === "image-bg" || onFullColor;
+    const mainColor = onFullColor ? "#fff" : onDark ? "#fff" : "#111";
+    const accentColor = onFullColor ? "rgba(255,255,255,0.8)" : plan.color;
+    const mutedColor = onFullColor ? "rgba(255,255,255,0.6)" : onDark ? "rgba(255,255,255,0.5)" : "#9ca3af";
+    const priceAlign = theme.priceAlign ?? "left";
+    const displayPrice = plan?._interactive?.totalPriceLabel ?? plan.price;
+    const justifyContent = priceAlign === "center" ? "center" : priceAlign === "right" ? "flex-end" : "flex-start";
+    const baseLabel = plan?._interactive?.basePrice != null ? `${plan.currency}${formatPlanAmount(plan, plan._interactive.basePrice)}` : null;
+    const deltaValue = plan?._interactive?.totalPrice != null ? plan._interactive.totalPrice - plan._interactive.basePrice : 0;
+    const showDelta = Math.abs(deltaValue) > 0.001;
 
-  if (theme.priceDisplay === "hero") return (
-    <div style={{ textAlign: priceAlign }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 2, justifyContent: priceAlign === "center" ? "center" : priceAlign === "right" ? "flex-end" : "flex-start" }}>
-        <span style={{ color: accentColor, fontSize: 20, fontWeight: 700, marginTop: 10, fontFamily: theme.font }}>{plan.currency}</span>
-        <span style={{ color: mainColor, fontWeight: 900, fontSize: 58, lineHeight: 1, letterSpacing: -2, fontFamily: theme.font }}>{plan.price}</span>
-        <span style={{ color: mutedColor, fontSize: 12, marginTop: "auto", marginBottom: 8 }}>/{plan.period}</span>
-      </div>
-    </div>
-  );
-
-  if (theme.priceDisplay === "stacked-currency") return (
-    <div style={{ textAlign: priceAlign }}>
-      <div style={{ lineHeight: 1, display: "flex", flexDirection: "column", alignItems: priceAlign === "center" ? "center" : priceAlign === "right" ? "flex-end" : "flex-start", justifyContent: priceAlign === "center" ? "center" : priceAlign === "right" ? "flex-end" : "flex-start" }}>
-        <div style={{ color: accentColor, fontSize: 18, fontWeight: 700, fontFamily: theme.font, letterSpacing: 1, marginBottom: 2 }}>
-          {plan.currency}
+    if (theme.priceDisplay === "hero") return (
+        <div style={{ textAlign: priceAlign }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 2, justifyContent }}>
+                <span style={{ color: accentColor, fontSize: 20, fontWeight: 700, marginTop: 10, fontFamily: theme.font }}>{plan.currency}</span>
+                <span style={{ color: mainColor, fontWeight: 900, fontSize: 58, lineHeight: 1, letterSpacing: -2, fontFamily: theme.font }}>{displayPrice}</span>
+                <span style={{ color: mutedColor, fontSize: 12, marginTop: "auto", marginBottom: 8 }}>/{plan.period}</span>
+            </div>
+            {showDelta && (
+                <div style={{ display: "flex", justifyContent, gap: 6, marginTop: 6, fontSize: 11, color: mutedColor }}>
+                    <span>Base {baseLabel}</span>
+                    <span style={{ color: plan.color, fontWeight: 700 }}>{formatPlanDelta(plan, deltaValue)}</span>
+                </div>
+            )}
         </div>
-        <span style={{ color: accentColor, fontWeight: 900, fontSize: 54, letterSpacing: -2, fontFamily: theme.font }}>
-          {plan.price}{plan.suffixDash ? ".-" : ""}
-        </span>
-        {plan.period && (
-          <div style={{ color: mutedColor, fontSize: 12, marginTop: 4 }}>
-            {plan.period}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
 
-  if (theme.priceDisplay === "slash") return (
-    <div style={{ textAlign: priceAlign }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: priceAlign === "center" ? "center" : priceAlign === "right" ? "flex-end" : "flex-start" }}>
-        <span style={{ color: plan.color, fontWeight: 900, fontSize: 44, letterSpacing: -1, fontFamily: theme.font, textShadow: theme.colorMode === "dark" ? `0 0 30px ${plan.color}60` : "none" }}>{plan.currency}{plan.price}</span>
-        <span style={{ color: mutedColor, fontSize: 11, fontFamily: theme.font }}>/{plan.period}</span>
-      </div>
-    </div>
-  );
+    if (theme.priceDisplay === "stacked-currency") return (
+        <div style={{ textAlign: priceAlign }}>
+            <div style={{ lineHeight: 1, display: "flex", flexDirection: "column", alignItems: justifyContent === "center" ? "center" : justifyContent === "flex-end" ? "flex-end" : "flex-start", justifyContent }}>
+                <div style={{ color: accentColor, fontSize: 18, fontWeight: 700, fontFamily: theme.font, letterSpacing: 1, marginBottom: 2 }}>
+                    {plan.currency}
+                </div>
+                <span style={{ color: accentColor, fontWeight: 900, fontSize: 54, letterSpacing: -2, fontFamily: theme.font }}>
+                    {displayPrice}{plan.suffixDash ? ".-" : ""}
+                </span>
+                {plan.period && (
+                    <div style={{ color: mutedColor, fontSize: 12, marginTop: 4 }}>
+                        {plan.period}
+                    </div>
+                )}
+            </div>
+            {showDelta && <div style={{ marginTop: 8, color: plan.color, fontSize: 11, fontWeight: 700 }}>{formatPlanDelta(plan, deltaValue)}</div>}
+        </div>
+    );
 
-  if (theme.priceDisplay === "inline") return (
-    <div style={{ textAlign: priceAlign }}>
-      <span style={{ color: mainColor, fontWeight: 800, fontSize: 32, fontFamily: theme.font }}>
-        {plan.currency}{plan.price}
-        <small style={{ fontWeight: 400, fontSize: 13, color: mutedColor, marginLeft: 4 }}>/{plan.period}</small>
-      </span>
-    </div>
-  );
+    if (theme.priceDisplay === "slash") return (
+        <div style={{ textAlign: priceAlign }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent }}>
+                <span style={{ color: plan.color, fontWeight: 900, fontSize: 44, letterSpacing: -1, fontFamily: theme.font, textShadow: theme.colorMode === "dark" ? `0 0 30px ${plan.color}60` : "none" }}>{plan.currency}{displayPrice}</span>
+                <span style={{ color: mutedColor, fontSize: 11, fontFamily: theme.font }}>/{plan.period}</span>
+            </div>
+            {showDelta && <div style={{ marginTop: 6, color: mutedColor, fontSize: 11 }}>Base {baseLabel} · {formatPlanDelta(plan, deltaValue)}</div>}
+        </div>
+    );
 
-  // compact
-  return (
-    <div style={{ textAlign: priceAlign }}>
-      <div>
-        <span style={{ color: mainColor, fontWeight: 900, fontSize: 38, letterSpacing: -1, fontFamily: theme.font }}>{plan.currency}{plan.price}</span>
-        <span style={{ color: mutedColor, fontSize: 12 }}>/{plan.period}</span>
-      </div>
-    </div>
-  );
+    if (theme.priceDisplay === "inline") return (
+        <div style={{ textAlign: priceAlign }}>
+            <span style={{ color: mainColor, fontWeight: 800, fontSize: 32, fontFamily: theme.font }}>
+                {plan.currency}{displayPrice}
+                <small style={{ fontWeight: 400, fontSize: 13, color: mutedColor, marginLeft: 4 }}>/{plan.period}</small>
+            </span>
+            {showDelta && <div style={{ marginTop: 6, color: plan.color, fontSize: 11, fontWeight: 700 }}>{formatPlanDelta(plan, deltaValue)}</div>}
+        </div>
+    );
+
+    // compact
+    return (
+        <div style={{ textAlign: priceAlign }}>
+            <div>
+                <span style={{ color: mainColor, fontWeight: 900, fontSize: 38, letterSpacing: -1, fontFamily: theme.font }}>{plan.currency}{displayPrice}</span>
+                <span style={{ color: mutedColor, fontSize: 12 }}>/{plan.period}</span>
+            </div>
+            {showDelta && <div style={{ marginTop: 6, color: plan.color, fontSize: 10, fontWeight: 700 }}>{formatPlanDelta(plan, deltaValue)}</div>}
+        </div>
+    );
 }
 
 // 1e. Feature list — driven by theme.featureStyle
 function resolveFeatures(plan, theme) {
-  const onFullColor = theme.cardStyle === "full-color";
-  const onDark = theme.colorMode === "dark" || theme.cardStyle === "glass" || theme.cardStyle === "image-bg" || onFullColor;
-  const textColor = onFullColor ? "rgba(255,255,255,0.9)" : onDark ? "rgba(255,255,255,0.8)" : "#374151";
-  const mutedText = onFullColor ? "rgba(255,255,255,0.4)" : onDark ? "rgba(255,255,255,0.3)" : "#d1d5db";
-  const borderColor = theme.cardBg
-    ? "rgba(0,0,0,0.1)"
-    : onFullColor ? "rgba(255,255,255,0.15)"
-      : onDark ? "rgba(255,255,255,0.08)"
-        : "#f3f4f6";
-  const featureAlign = theme.featureAlign ?? "left";
+    const onFullColor = theme.cardStyle === "full-color";
+    const onDark = theme.colorMode === "dark" || theme.cardStyle === "glass" || theme.cardStyle === "image-bg" || onFullColor;
+    const textColor = onFullColor ? "rgba(255,255,255,0.9)" : onDark ? "rgba(255,255,255,0.8)" : "#374151";
+    const mutedText = onFullColor ? "rgba(255,255,255,0.4)" : onDark ? "rgba(255,255,255,0.3)" : "#d1d5db";
+    const borderColor = theme.cardBg
+        ? "rgba(0,0,0,0.1)"
+        : onFullColor ? "rgba(255,255,255,0.15)"
+            : onDark ? "rgba(255,255,255,0.08)"
+                : "#f3f4f6";
+    const featureAlign = theme.featureAlign ?? "left";
 
-  const allFeatures = [
-    ...plan.features.map(f => ({ text: f, disabled: false })),
-    ...(plan.disabledFeatures || []).map(f => ({ text: f, disabled: true })),
-  ];
+    const activeFeatures = Array.isArray(plan.features) ? plan.features : [];
+    const allFeatures = [
+        ...activeFeatures.map(f => ({ text: f, disabled: false })),
+        ...(plan.disabledFeatures || []).map(f => ({ text: f, disabled: true })),
+    ];
 
-  if (theme.featureStyle === "checklist") return (
-    <div style={{ textAlign: featureAlign }}>
-      {allFeatures.map((f, i) => (
-        <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10 }}>
-          {f.disabled
-            ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1, opacity: 0.35 }}><circle cx="8" cy="8" r="7" stroke={plan.color} strokeWidth="1.5" /><path d="M5 11L11 5M5 5L11 11" stroke={plan.color} strokeWidth="1.5" strokeLinecap="round" /></svg>
-            : <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="8" cy="8" r="7" fill={plan.color + "25"} stroke={plan.color} strokeWidth="1" /><path d="M4.5 8L7 10.5L11.5 5.5" stroke={plan.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          }
-          <span style={{ color: f.disabled ? mutedText : textColor, fontSize: 12, lineHeight: 1.5, textDecoration: f.disabled ? "line-through" : "none" }}>{f.text}</span>
+    if (theme.featureStyle === "checklist") return (
+        <div style={{ textAlign: featureAlign }}>
+            {allFeatures.map((f, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10 }}>
+                    {f.disabled
+                        ? <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1, opacity: 0.35 }}><circle cx="8" cy="8" r="7" stroke={plan.color} strokeWidth="1.5" /><path d="M5 11L11 5M5 5L11 11" stroke={plan.color} strokeWidth="1.5" strokeLinecap="round" /></svg>
+                        : <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="8" cy="8" r="7" fill={plan.color + "25"} stroke={plan.color} strokeWidth="1" /><path d="M4.5 8L7 10.5L11.5 5.5" stroke={plan.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    }
+                    <span style={{ color: f.disabled ? mutedText : textColor, fontSize: 12, lineHeight: 1.5, textDecoration: f.disabled ? "line-through" : "none" }}>{f.text}</span>
+                </div>
+            ))}
         </div>
-      ))}
-    </div>
-  );
+    );
 
-  if (theme.featureStyle === "dotlist") return (
-    <div style={{ textAlign: featureAlign }}>
-      {allFeatures.map((f, i) => (
-        <div key={i} style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: f.disabled ? "#334155" : plan.color, boxShadow: f.disabled ? "none" : `0 0 8px ${plan.color}` }} />
-          <span style={{ color: f.disabled ? mutedText : textColor, fontSize: 12, textDecoration: f.disabled ? "line-through" : "none" }}>{f.text}</span>
+    if (theme.featureStyle === "dotlist") return (
+        <div style={{ textAlign: featureAlign }}>
+            {allFeatures.map((f, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: f.disabled ? "#334155" : plan.color, boxShadow: f.disabled ? "none" : `0 0 8px ${plan.color}` }} />
+                    <span style={{ color: f.disabled ? mutedText : textColor, fontSize: 12, textDecoration: f.disabled ? "line-through" : "none" }}>{f.text}</span>
+                </div>
+            ))}
         </div>
-      ))}
-    </div>
-  );
+    );
 
-  if (theme.featureStyle === "tags") return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, textAlign: featureAlign }}>
-      {plan.features.map((f, i) => (
-        <span key={i} style={{ background: onFullColor ? "rgba(255,255,255,0.2)" : onDark ? "rgba(255,255,255,0.12)" : `${plan.color}15`, color: onDark || onFullColor ? "#fff" : plan.color, fontSize: 11, padding: "4px 10px", borderRadius: 99, fontWeight: 500 }}>{f}</span>
-      ))}
-    </div>
-  );
-
-  if (theme.featureStyle === "minimal") return (
-    <div style={{ textAlign: featureAlign }}>
-      {allFeatures.map((f, i) => (
-        <div key={i} style={{ borderBottom: `1px solid ${borderColor}`, padding: "8px 0", color: f.disabled ? mutedText : textColor, fontSize: 12, opacity: f.disabled ? 0.45 : 1, display: "flex", gap: 8, alignItems: "center" }}>
-          <span style={{ color: f.disabled ? "#555" : plan.color, fontWeight: 900, fontSize: 10 }}>{f.disabled ? "×" : "›"}</span>
-          {f.text}
+    if (theme.featureStyle === "tags") return (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, textAlign: featureAlign }}>
+            {activeFeatures.map((f, i) => (
+                <span key={i} style={{ background: onFullColor ? "rgba(255,255,255,0.2)" : onDark ? "rgba(255,255,255,0.12)" : `${plan.color}15`, color: onDark || onFullColor ? "#fff" : plan.color, fontSize: 11, padding: "4px 10px", borderRadius: 99, fontWeight: 500 }}>{f}</span>
+            ))}
         </div>
-      ))}
-    </div>
-  );
+    );
 
-  if (theme.featureStyle === "plain") return (
-    <div style={{ textAlign: featureAlign }}>
-      {allFeatures.map((f, i) => (
-        <div key={i} style={{ color: f.disabled ? mutedText : textColor, fontSize: 12, padding: "6px 0", opacity: f.disabled ? 0.4 : 1 }}>{f.text}</div>
-      ))}
-    </div>
-  );
-  // table-rows (used inside comparison layouts, handled separately)
-  return (
-    <div style={{ textAlign: featureAlign }}>
-      {allFeatures.map((f, i) => (
-        <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${borderColor}` }}>
-          {f.disabled
-            ? <span style={{ color: mutedText, fontSize: 14 }}>—</span>
-            : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7L5.5 10L11.5 4" stroke={plan.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          }
-          <span style={{ color: f.disabled ? mutedText : textColor, fontSize: 12, textDecoration: f.disabled ? "line-through" : "none" }}>{f.text}</span>
+    if (theme.featureStyle === "minimal") return (
+        <div style={{ textAlign: featureAlign }}>
+            {allFeatures.map((f, i) => (
+                <div key={i} style={{ borderBottom: `1px solid ${borderColor}`, padding: "8px 0", color: f.disabled ? mutedText : textColor, fontSize: 12, opacity: f.disabled ? 0.45 : 1, display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{ color: f.disabled ? "#555" : plan.color, fontWeight: 900, fontSize: 10 }}>{f.disabled ? "×" : "›"}</span>
+                    {f.text}
+                </div>
+            ))}
         </div>
-      ))}
-    </div>
-  );
+    );
+
+    if (theme.featureStyle === "plain") return (
+        <div style={{ textAlign: featureAlign }}>
+            {allFeatures.map((f, i) => (
+                <div key={i} style={{ color: f.disabled ? mutedText : textColor, fontSize: 12, padding: "6px 0", opacity: f.disabled ? 0.4 : 1 }}>{f.text}</div>
+            ))}
+        </div>
+    );
+    // table-rows (used inside comparison layouts, handled separately)
+    return (
+        <div style={{ textAlign: featureAlign }}>
+            {allFeatures.map((f, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", padding: "7px 0", borderBottom: `1px solid ${borderColor}` }}>
+                    {f.disabled
+                        ? <span style={{ color: mutedText, fontSize: 14 }}>—</span>
+                        : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7L5.5 10L11.5 4" stroke={plan.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    }
+                    <span style={{ color: f.disabled ? mutedText : textColor, fontSize: 12, textDecoration: f.disabled ? "line-through" : "none" }}>{f.text}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function renderInteractivePricing(plan, theme, actions) {
+    const controls = Array.isArray(plan?._interactive?.controls) ? plan._interactive.controls : [];
+    if (!controls.length) return null;
+
+    const onFullColor = theme.cardStyle === "full-color";
+    const onDark = theme.colorMode === "dark" || theme.cardStyle === "glass" || theme.cardStyle === "image-bg" || onFullColor;
+    const panelBg = onFullColor ? "rgba(255,255,255,0.18)" : onDark ? "rgba(255,255,255,0.06)" : "#f8fafc";
+    const panelBorder = onFullColor ? "rgba(255,255,255,0.18)" : onDark ? "rgba(255,255,255,0.08)" : "#e2e8f0";
+    const headingColor = onDark || onFullColor ? "#ffffff" : "#111827";
+    const bodyColor = onDark || onFullColor ? "rgba(255,255,255,0.82)" : "#475569";
+    const mutedColor = onDark || onFullColor ? "rgba(255,255,255,0.55)" : "#94a3b8";
+
+    return (
+        <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: mutedColor, letterSpacing: 1.2, textTransform: "uppercase" }}>
+                    Customize Plan
+                </div>
+                {controls.length > 1 && (
+                    <button
+                        onClick={() => actions.onReset(plan)}
+                        style={{
+                            border: `1px solid ${panelBorder}`,
+                            background: "transparent",
+                            color: mutedColor,
+                            borderRadius: 999,
+                            padding: "4px 8px",
+                            fontSize: 10,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            fontFamily: theme.font,
+                        }}
+                    >
+                        Reset
+                    </button>
+                )}
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {controls.map((control) => {
+                    const selectedStyles = control.enabled
+                        ? {
+                            border: `1px solid ${plan.color}`,
+                            boxShadow: `${plan.color}22 0 10px 24px`,
+                        }
+                        : {
+                            border: `1px solid ${panelBorder}`,
+                            boxShadow: "none",
+                        };
+
+                    if (control.type === "slider") {
+                        return (
+                            <div
+                                key={control.id}
+                                style={{
+                                    background: panelBg,
+                                    borderRadius: 12,
+                                    padding: "12px 12px 10px",
+                                    ...selectedStyles,
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+                                    <div style={{ minWidth: 0 }}>
+                                        <div style={{ color: headingColor, fontSize: 12, fontWeight: 700 }}>{control.label || control.text || "Slider"}</div>
+                                        {control.description && (
+                                            <div style={{ color: mutedColor, fontSize: 10, marginTop: 2, lineHeight: 1.45 }}>{control.description}</div>
+                                        )}
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                                        <div style={{ color: plan.color, fontSize: 12, fontWeight: 800 }}>
+                                            {control.value}{control.unitLabel ? ` ${control.unitLabel}` : ""}
+                                        </div>
+                                        {control.removable && (
+                                            <button
+                                                onClick={() => actions.onToggle(plan.id, control.id)}
+                                                style={{
+                                                    border: "none",
+                                                    background: control.enabled ? plan.color : "rgba(148,163,184,0.28)",
+                                                    color: control.enabled ? "#fff" : "#475569",
+                                                    width: 26,
+                                                    height: 26,
+                                                    borderRadius: 999,
+                                                    fontSize: 13,
+                                                    fontWeight: 900,
+                                                    cursor: "pointer",
+                                                }}
+                                            >
+                                                {control.enabled ? "✓" : "+"}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <input
+                                    type="range"
+                                    min={control.min}
+                                    max={control.max}
+                                    step={control.step}
+                                    disabled={!control.enabled}
+                                    value={control.value}
+                                    onChange={(e) => actions.onSlider(plan.id, control.id, control, Number(e.target.value))}
+                                    style={{ width: "100%", accentColor: plan.color, cursor: control.enabled ? "pointer" : "not-allowed", opacity: control.enabled ? 1 : 0.45 }}
+                                />
+
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 6 }}>
+                                    <div style={{ color: mutedColor, fontSize: 10 }}>
+                                        {control.min}
+                                        {control.unitLabel ? ` ${control.unitLabel}` : ""}
+                                        {" "}–{" "}
+                                        {control.max}
+                                        {control.unitLabel ? ` ${control.unitLabel}` : ""}
+                                    </div>
+                                    <div style={{ color: control.enabled ? plan.color : mutedColor, fontSize: 11, fontWeight: 700 }}>
+                                        {control.enabled ? formatPlanDelta(plan, control.delta) : "Removed"}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <button
+                            key={control.id}
+                            onClick={() => actions.onToggle(plan.id, control.id)}
+                            style={{
+                                width: "100%",
+                                textAlign: "left",
+                                background: panelBg,
+                                borderRadius: 12,
+                                padding: "12px",
+                                cursor: "pointer",
+                                fontFamily: theme.font,
+                                ...selectedStyles,
+                            }}
+                        >
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                                <div style={{ minWidth: 0 }}>
+                                    <div style={{ color: headingColor, fontSize: 12, fontWeight: 700 }}>
+                                        {control.label || control.text || "Optional feature"}
+                                    </div>
+                                    {control.description && (
+                                        <div style={{ color: mutedColor, fontSize: 10, marginTop: 2, lineHeight: 1.45 }}>{control.description}</div>
+                                    )}
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                                    <div style={{ color: control.enabled ? plan.color : mutedColor, fontSize: 11, fontWeight: 700 }}>
+                                        {formatPlanDelta(plan, control.delta)}
+                                    </div>
+                                    <div
+                                        style={{
+                                            width: 22,
+                                            height: 22,
+                                            borderRadius: 999,
+                                            background: control.enabled ? plan.color : "rgba(148,163,184,0.28)",
+                                            color: control.enabled ? "#fff" : "#475569",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: 12,
+                                            fontWeight: 900,
+                                        }}
+                                    >
+                                        {control.enabled ? "✓" : "+"}
+                                    </div>
+                                </div>
+                            </div>
+                            {control.enabled && (
+                                <div style={{ color: bodyColor, fontSize: 10, marginTop: 8 }}>
+                                    Included in current total
+                                </div>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
 }
 
 // 1f. Button — driven by theme.buttonShape + cardStyle
@@ -647,7 +1173,7 @@ function resolveButton(plan, theme) {
       letterSpacing: 1,
     };
   }
-  // elevated, flat, outlined — standard
+  // elevated, flat, outlined â€” standard
   return {
     background: plan.highlighted ? plan.color : "transparent",
     color: plan.highlighted ? "#fff" : plan.color,
@@ -676,246 +1202,276 @@ function Stars({ rating, color }) {
 }
 
 
-// ───────────────────────────────────────────────────────────────────────────
-// SECTION 2 — LAYOUT COMPONENTS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// SECTION 2 â€” LAYOUT COMPONENTS
 // These handle STRUCTURE only. All visual decisions go through resolvers.
 // They receive the full doc object: { layout, theme, plans, ... }
-// ───────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Layout: grid-3, grid-4, grid-5
 function GridLayout({ doc }) {
-  const { theme, plans } = doc;
-  const containerRef = useRef(null);
-  const width = useContainerWidth(containerRef);
-  const visible = useVisibleOnce(containerRef);
-  const hasAnim = !!theme.animation && theme.animation !== "none";
-  const baseCols = doc.layout === "grid-5" ? 5 : doc.layout === "grid-3" ? 3 : 4;
-  const cols = width < 480 ? 1
-    : width < 720 ? Math.min(2, baseCols)
-      : width < 960 ? Math.min(3, baseCols)
-        : baseCols;
-  const onDark = theme.colorMode === "dark" || theme.cardStyle === "glass";
+    const { theme, plans } = doc;
+    const containerRef = useRef(null);
+    const width = useContainerWidth(containerRef);
+    const visible = useVisibleOnce(containerRef);
+    const hasAnim = !!theme.animation && theme.animation !== "none";
+    const { computedPlans, updateSlider, toggleControl, resetPlan } = useInteractivePlans(plans);
+    const baseCols = doc.layout === "grid-5" ? 5 : doc.layout === "grid-3" ? 3 : 4;
+    const cols = width < 480 ? 1
+        : width < 720 ? Math.min(2, baseCols)
+            : width < 960 ? Math.min(3, baseCols)
+                : baseCols;
+    const onDark = theme.colorMode === "dark" || theme.cardStyle === "glass";
 
-  const titleColor = onDark ? "#fff" : "#111";
-  const subtitleColor = onDark ? "rgba(255,255,255,0.5)" : "#6b7280";
+    const titleColor = onDark ? "#fff" : "#111";
+    const subtitleColor = onDark ? "rgba(255,255,255,0.5)" : "#6b7280";
 
-  return (
-    <div ref={containerRef} style={{ background: theme.bg || "transparent", padding: theme.widgetPadding ?? (width < 480 ? "24px 16px" : "48px 28px"), fontFamily: theme.font, minHeight: 480, position: "relative", overflow: "visible" }}>
-      <AnimStyleTag />
-      {/* Page header */}
-      {doc.pageTitle && (
-        <div style={{ textAlign: "center", marginBottom: 44, position: "relative" }}>
-          {doc.pageSubtitle && <p style={{ color: plans[0]?.color || "#6366f1", fontWeight: 700, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>{doc.pageSubtitle}</p>}
-          <h2 style={{ fontSize: width < 480 ? 24 : 36, fontWeight: 900, color: titleColor, margin: 0, letterSpacing: -0.5, fontFamily: theme.font }}>{doc.pageTitle}</h2>
-          {doc.pageDescription && <p style={{ color: subtitleColor, marginTop: 8, fontSize: 14 }}>{doc.pageDescription}</p>}
-        </div>
-      )}
-
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols},1fr)`, gap: theme.cardGap ?? (cols === 5 ? 12 : 20), maxWidth: cols === 5 ? 1300 : 1100, margin: "0 auto" }}>
-        {plans.map((plan, idx) => {
-          const cardCSS = resolveCardCSS(theme, plan);
-          const btnCSS = resolveButton(plan, theme);
-          const animStyle = hasAnim
-            ? (visible ? getCardAnim(theme.animation, idx, plans.length) : { opacity: 0 })
-            : {};
-          const cardBr = parseInt(theme.borderRadius, 10) || 12;
-          const cardContent = (
-            <>
-              {plan.bgImage && (
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.6) 100%)", borderRadius: "inherit", zIndex: 0, pointerEvents: "none" }} />
-              )}
-              {theme.cardStyle === "full-color" && plan.bgGradient && (
-                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", borderRadius: "inherit", zIndex: 0, pointerEvents: "none" }} />
-              )}
-              {resolveAccentLine(theme, plan)}
-
-              <div style={{ position: "relative", zIndex: 1, padding: theme.headerLayout === "image-bg" ? "0" : "0" }}>
-                {resolveHeader(plan, theme)}
-              </div>
-
-              <div style={{ position: "relative", zIndex: 1, padding: theme.bodyPadding ?? "20px 22px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
-                {/* Rating */}
-                {!!plan.rating && theme.headerLayout !== "image-bg" && (
-                  <Stars rating={plan.rating} color={plan.color} />
-                )}
-
-                {/* Price */}
-                <div style={{ marginBottom: 20 }}>
-                  {resolvePrice(plan, theme)}
+    return (
+        <div ref={containerRef} style={{ background: theme.bg || "transparent", padding: theme.widgetPadding ?? (width < 480 ? "24px 16px" : "48px 28px"), fontFamily: theme.font, minHeight: 480, position: "relative", overflow: "visible" }}>
+            <AnimStyleTag />
+            {/* Page header */}
+            {doc.pageTitle && (
+                <div style={{ textAlign: "center", marginBottom: 44, position: "relative" }}>
+                    {doc.pageSubtitle && <p style={{ color: plans[0]?.color || "#6366f1", fontWeight: 700, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", marginBottom: 8 }}>{doc.pageSubtitle}</p>}
+                    <h2 style={{ fontSize: width < 480 ? 24 : 36, fontWeight: 900, color: titleColor, margin: 0, letterSpacing: -0.5, fontFamily: theme.font }}>{doc.pageTitle}</h2>
+                    {doc.pageDescription && <p style={{ color: subtitleColor, marginTop: 8, fontSize: 14 }}>{doc.pageDescription}</p>}
                 </div>
+            )}
 
-                {/* Divider */}
-                {!theme.cardBg && (theme.cardStyle === "elevated" || theme.cardStyle === "outlined" || theme.cardStyle === "flat") && (
-                  <div style={{ height: 1, background: "#f1f5f9", marginBottom: 18 }} />
-                )}
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols},1fr)`, gap: theme.cardGap ?? (cols === 5 ? 12 : 20), maxWidth: cols === 5 ? 1300 : 1100, margin: "0 auto" }}>
+                {computedPlans.map((plan, idx) => {
+                    const cardCSS = resolveCardCSS(theme, plan);
+                    const btnCSS = resolveButton(plan, theme);
+                    const animStyle = hasAnim
+                        ? (visible ? getCardAnim(theme.animation, idx, plans.length) : { opacity: 0, willChange: "opacity, transform" })
+                        : {};
+                    const cardBr = parseInt(theme.borderRadius, 10) || 12;
+                    const cardContent = (
+                        <>
+                            {plan.bgImage && (
+                                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.6) 100%)", borderRadius: "inherit", zIndex: 0, pointerEvents: "none" }} />
+                            )}
+                            {theme.cardStyle === "full-color" && plan.bgGradient && (
+                                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", borderRadius: "inherit", zIndex: 0, pointerEvents: "none" }} />
+                            )}
+                            {resolveAccentLine(theme, plan)}
 
-                {/* Features */}
-                <div style={{ marginBottom: 24, flex: 1 }}>
-                  {resolveFeatures(plan, theme)}
-                </div>
+                            <div style={{ position: "relative", zIndex: 1, padding: theme.headerLayout === "image-bg" ? "0" : "0" }}>
+                                {resolveHeader(plan, theme)}
+                            </div>
 
-                {/* Button */}
-                {theme.buttonShape === "underline"
-                  ? <button style={btnCSS}>{plan.buttonText} &rarr;</button>
-                  : <button style={btnCSS}>{plan.buttonText}</button>
-                }
-              </div>
-            </>
-          );
+                            <div style={{ position: "relative", zIndex: 1, padding: theme.bodyPadding ?? "20px 22px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
+                                {/* Rating */}
+                                {!!plan.rating && theme.headerLayout !== "image-bg" && (
+                                    <Stars rating={plan.rating} color={plan.color} />
+                                )}
 
-          if (theme.glowBorder) {
-            return (
-              <GlowCard
-                key={plan.id}
-                colors={theme.glowColors || [plan.color, "#fff", plan.color]}
-                thickness={theme.glowThickness ?? 2}
-                speed={theme.glowSpeed ?? 3}
-                blur={theme.glowBlur ?? 12}
-                borderRadius={cardBr}
-              >
-                <div style={{ ...cardCSS, ...animStyle, border: "none", borderRadius: cardBr, display: "flex", flexDirection: "column", height: "100%" }}>
-                  {cardContent}
-                </div>
-              </GlowCard>
-            );
-          }
+                                {/* Price */}
+                                <div style={{ marginBottom: 20 }}>
+                                    {resolvePrice(plan, theme)}
+                                </div>
 
-          return (
-            <div key={plan.id} style={{ ...cardCSS, ...animStyle }}>
-              {cardContent}
+                                {/* Divider */}
+                                {!theme.cardBg && (theme.cardStyle === "elevated" || theme.cardStyle === "outlined" || theme.cardStyle === "flat") && (
+                                    <div style={{ height: 1, background: "#f1f5f9", marginBottom: 18 }} />
+                                )}
+
+                                {/* Features */}
+                                <div style={{ marginBottom: 24, flex: 1 }}>
+                                    {renderInteractivePricing(plan, theme, {
+                                        onSlider: updateSlider,
+                                        onToggle: toggleControl,
+                                        onReset: resetPlan,
+                                    })}
+                                    {resolveFeatures(plan, theme)}
+                                </div>
+
+                                {/* Button */}
+                                {theme.buttonShape === "underline"
+                                    ? <button style={btnCSS}>{plan.buttonText} &rarr;</button>
+                                    : <button style={btnCSS}>{plan.buttonText}</button>
+                                }
+                            </div>
+                        </>
+                    );
+
+                    if (theme.glowBorder) {
+                        return (
+                            <GlowCard
+                                key={plan.id}
+                                colors={theme.glowColors || [plan.color, "#fff", plan.color]}
+                                thickness={theme.glowThickness ?? 2}
+                                speed={theme.glowSpeed ?? 3}
+                                blur={theme.glowBlur ?? 12}
+                                borderRadius={cardBr}
+                            >
+                                <div style={{ ...cardCSS, ...animStyle, border: "none", borderRadius: cardBr, display: "flex", flexDirection: "column", height: "100%" }}>
+                                    {cardContent}
+                                </div>
+                            </GlowCard>
+                        );
+                    }
+
+                    return (
+                        <div key={plan.id} style={cardCSS}>
+                            {cardContent}
+                        </div>
+                    );
+                })}
             </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+        </div>
+    );
 }
 
 // Layout: horizontal-list (full-width columns side by side)
 function HorizontalLayout({ doc }) {
-  const { theme, plans } = doc;
-  const containerRef = useRef(null);
-  const width = useContainerWidth(containerRef);
-  const visible = useVisibleOnce(containerRef);
-  const hasAnim = !!theme.animation && theme.animation !== "none";
+    const { theme, plans } = doc;
+    const containerRef = useRef(null);
+    const width = useContainerWidth(containerRef);
+    const visible = useVisibleOnce(containerRef);
+    const hasAnim = !!theme.animation && theme.animation !== "none";
+    const { computedPlans, updateSlider, toggleControl, resetPlan } = useInteractivePlans(plans);
 
-  return (
-    <div ref={containerRef} style={{ fontFamily: theme.font, display: "flex", flexDirection: width < 600 ? "column" : "row", minHeight: 480 }}>
-      <AnimStyleTag />
-      {plans.map((plan, idx) => {
-        const btnCSS = resolveButton(plan, theme);
-        const animStyle = hasAnim
-          ? (visible ? getCardAnim(theme.animation, idx, plans.length) : { opacity: 0 })
-          : {};
+    return (
+        <div ref={containerRef} style={{ fontFamily: theme.font, display: "flex", flexDirection: width < 600 ? "column" : "row", minHeight: 480 }}>
+            <AnimStyleTag />
+            {computedPlans.map((plan, idx) => {
+                const btnCSS = resolveButton(plan, theme);
+                const animStyle = hasAnim
+                    ? (visible ? getCardAnim(theme.animation, idx, plans.length) : { opacity: 0 })
+                    : {};
 
-        return (
-          <div key={plan.id} style={{ flex: 1, display: "flex", flexDirection: "column", ...animStyle }}>
-            {/* Colored header section */}
-            <div style={{ background: plan.color, padding: "28px 22px 22px", position: "relative" }}>
-              {resolveAccentLine(theme, plan)}
-              {plan.badge?.trim() && (
-                <div style={{
-                  background: "rgba(0,0,0,0.25)", color: "#fff", fontSize: 9, fontWeight: 900,
-                  padding: "3px 10px", borderRadius: 2, letterSpacing: 2, display: "inline-block",
-                  marginBottom: 12, textTransform: "uppercase"
-                }}>{plan.badge}</div>
-              )}
-              <div style={{ color: "rgba(255,255,255,0.9)", fontWeight: 900, fontSize: 22, letterSpacing: -0.3 }}>{plan.name}</div>
-              <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, marginTop: 2, marginBottom: 16 }}>{plan.description}</div>
-              <div style={{ color: "#fff", fontWeight: 900, fontSize: 52, lineHeight: 1, letterSpacing: -2 }}>
-                <span style={{ fontSize: 18, fontWeight: 700, verticalAlign: "super" }}>{plan.currency}</span>
-                {plan.price}
-              </div>
-              <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, marginTop: 4, textTransform: "uppercase", letterSpacing: 1 }}>per {plan.period}</div>
-            </div>
+                return (
+                    <div key={plan.id} style={{ flex: 1, display: "flex", flexDirection: "column", ...animStyle }}>
+                        {/* Colored header section */}
+                        <div style={{ background: plan.color, padding: "28px 22px 22px", position: "relative" }}>
+                            {resolveAccentLine(theme, plan)}
+                            {plan.badge?.trim() && (
+                                <div style={{
+                                    background: "rgba(0,0,0,0.25)", color: "#fff", fontSize: 9, fontWeight: 900,
+                                    padding: "3px 10px", borderRadius: 2, letterSpacing: 2, display: "inline-block",
+                                    marginBottom: 12, textTransform: "uppercase"
+                                }}>{plan.badge}</div>
+                            )}
+                            <div style={{ color: "rgba(255,255,255,0.9)", fontWeight: 900, fontSize: 22, letterSpacing: -0.3 }}>{plan.name}</div>
+                            <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, marginTop: 2, marginBottom: 16 }}>{plan.description}</div>
+                            <div style={{ color: "#fff", fontWeight: 900, fontSize: 52, lineHeight: 1, letterSpacing: -2 }}>
+                                <span style={{ fontSize: 18, fontWeight: 700, verticalAlign: "super" }}>{plan.currency}</span>
+                                {plan?._interactive?.totalPriceLabel ?? plan.price}
+                            </div>
+                            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, marginTop: 4, textTransform: "uppercase", letterSpacing: 1 }}>per {plan.period}</div>
+                            {Math.abs((plan?._interactive?.totalPrice ?? 0) - (plan?._interactive?.basePrice ?? 0)) > 0.001 && (
+                                <div style={{ color: "rgba(255,255,255,0.82)", fontSize: 11, marginTop: 8, fontWeight: 700 }}>
+                                    {formatPlanDelta(plan, plan._interactive.totalPrice - plan._interactive.basePrice)}
+                                </div>
+                            )}
+                        </div>
 
-            {/* White body */}
-            <div style={{ background: theme.cardBg || "#fff", flex: 1, padding: theme.bodyPadding ?? "20px 22px 24px", borderLeft: `3px solid ${plan.color}` }}>
-              {!!plan.rating && <Stars rating={plan.rating} color={plan.color} />}
-              <div style={{ marginBottom: 20 }}>
-                {resolveFeatures(plan, theme)}
-              </div>
-              <button style={btnCSS}>{plan.buttonText}</button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+                        {/* White body */}
+                        <div style={{ background: theme.cardBg || "#fff", flex: 1, padding: theme.bodyPadding ?? "20px 22px 24px", borderLeft: `3px solid ${plan.color}` }}>
+                            {!!plan.rating && <Stars rating={plan.rating} color={plan.color} />}
+                            {renderInteractivePricing(plan, theme, {
+                                onSlider: updateSlider,
+                                onToggle: toggleControl,
+                                onReset: resetPlan,
+                            })}
+                            <div style={{ marginBottom: 20 }}>
+                                {resolveFeatures(plan, theme)}
+                            </div>
+                            <button style={btnCSS}>{plan.buttonText}</button>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
 }
 
 // Layout: tall-portrait (photo header cards)
 function TallPortraitLayout({ doc }) {
-  const { theme, plans } = doc;
-  const containerRef = useRef(null);
-  const width = useContainerWidth(containerRef);
-  const visible = useVisibleOnce(containerRef);
-  const hasAnim = !!theme.animation && theme.animation !== "none";
-  const baseCols = plans.length;
-  const cols = width < 480 ? 1
-    : width < 720 ? Math.min(2, baseCols)
-      : width < 960 ? Math.min(3, baseCols)
-        : baseCols;
+    const { theme, plans } = doc;
+    const containerRef = useRef(null);
+    const width = useContainerWidth(containerRef);
+    const visible = useVisibleOnce(containerRef);
+    const hasAnim = !!theme.animation && theme.animation !== "none";
+    const { computedPlans, updateSlider, toggleControl, resetPlan } = useInteractivePlans(plans);
+    const baseCols = plans.length;
+    const cols = width < 480 ? 1
+        : width < 720 ? Math.min(2, baseCols)
+            : width < 960 ? Math.min(3, baseCols)
+                : baseCols;
 
-  return (
-    <div ref={containerRef} style={{ background: theme.bg || "transparent", padding: theme.widgetPadding ?? (width < 480 ? "24px 16px" : "48px 28px"), fontFamily: theme.font }}>
-      <AnimStyleTag />
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols},1fr)`, gap: 16, maxWidth: 1100, margin: "0 auto" }}>
-        {plans.map((plan, idx) => {
-          const cardCSS = resolveCardCSS(theme, plan);
-          const btnCSS = resolveButton(plan, theme);
-          const animStyle = hasAnim
-            ? (visible ? getCardAnim(theme.animation, idx, plans.length) : { opacity: 0 })
-            : {};
+    return (
+        <div ref={containerRef} style={{ background: theme.bg || "transparent", padding: theme.widgetPadding ?? (width < 480 ? "24px 16px" : "48px 28px"), fontFamily: theme.font }}>
+            <AnimStyleTag />
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols},1fr)`, gap: 16, maxWidth: 1100, margin: "0 auto" }}>
+                {computedPlans.map((plan, idx) => {
+                    const cardCSS = resolveCardCSS(theme, plan);
+                    const btnCSS = resolveButton(plan, theme);
+                    const animStyle = hasAnim
+                        ? (visible ? getCardAnim(theme.animation, idx, plans.length) : { opacity: 0 })
+                        : {};
 
-          return (
-            <div key={plan.id} style={{ ...cardCSS, ...animStyle }}>
-              {theme.cardStyle === "full-color" && plan.bgGradient && (
-                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", borderRadius: "inherit", zIndex: 0, pointerEvents: "none" }} />
-              )}
-              {resolveAccentLine(theme, plan)}
+                    return (
+                        <div key={plan.id} style={cardCSS}>
+                            {theme.cardStyle === "full-color" && plan.bgGradient && (
+                                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)", borderRadius: "inherit", zIndex: 0, pointerEvents: "none" }} />
+                            )}
+                            {resolveAccentLine(theme, plan)}
 
-              {/* image-bg: card IS the photo — no separate header image, just overlay content */}
-              {theme.cardStyle === "image-bg" ? (
-                <>
-                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.85) 100%)" }} />
-                  {plan.badge?.trim() && <div style={{ position: "absolute", top: 12, right: 12, background: plan.color, color: "#fff", fontSize: 9, fontWeight: 900, padding: "3px 10px", borderRadius: theme.buttonShape === "pill" ? 99 : 2, letterSpacing: 1.5, zIndex: 2 }}>{plan.badge}</div>}
-                  <div style={{ position: "relative", zIndex: 2, minHeight: cols === 1 ? "auto" : 360, display: "flex", flexDirection: "column", justifyContent: cols === 1 ? "flex-start" : "flex-end", padding: "18px 18px 22px" }}>
-                    <div style={{ color: "#fff", fontWeight: 900, fontSize: 18, fontFamily: theme.font, marginBottom: 4 }}>{plan.name}</div>
-                    {resolvePrice(plan, theme)}
-                    <div style={{ margin: "14px 0 18px" }}>{resolveFeatures(plan, theme)}</div>
-                    <button style={resolveButton(plan, theme)}>{plan.buttonText}</button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* Non image-bg: classic image header */}
-                  <div style={{ height: 200, background: plan.bgImage ? `url(${plan.bgImage}) center/cover` : plan.bgGradient, position: "relative" }}>
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,transparent 35%,rgba(0,0,0,0.75))" }} />
-                    {plan.badge?.trim() && <div style={{ position: "absolute", top: 12, right: 12, background: plan.color, color: "#fff", fontSize: 9, fontWeight: 900, padding: "3px 10px", borderRadius: theme.buttonShape === "pill" ? 99 : 2, letterSpacing: 1.5 }}>{plan.badge}</div>}
-                    <div style={{ position: "absolute", bottom: 14, left: 16 }}>
-                      <div style={{ color: "#fff", fontWeight: 900, fontSize: 20, fontFamily: theme.font }}>{plan.name}</div>
-                      <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 2 }}>{plan.description}</div>
-                    </div>
-                  </div>
-                  <div style={{ padding: "18px 18px 22px" }}>
-                    {!!plan.rating && <Stars rating={plan.rating} color={plan.color} />}
-                    <div style={{ marginBottom: 14 }}>
-                      {resolvePrice(plan, theme)}
-                    </div>
-                    <div style={{ marginBottom: 20 }}>
-                      {resolveFeatures(plan, theme)}
-                    </div>
-                    <button style={btnCSS}>{plan.buttonText}</button>
-                  </div> {/* closes padding div */}
-                </>
-              )}
+                            {/* image-bg: card IS the photo — no separate header image, just overlay content */}
+                            {theme.cardStyle === "image-bg" ? (
+                                <>
+                                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.45) 40%, rgba(0,0,0,0.85) 100%)" }} />
+                                    {plan.badge?.trim() && <div style={{ position: "absolute", top: 12, right: 12, background: plan.color, color: "#fff", fontSize: 9, fontWeight: 900, padding: "3px 10px", borderRadius: theme.buttonShape === "pill" ? 99 : 2, letterSpacing: 1.5, zIndex: 2 }}>{plan.badge}</div>}
+                                    <div style={{ position: "relative", zIndex: 2, minHeight: cols === 1 ? "auto" : 360, display: "flex", flexDirection: "column", justifyContent: cols === 1 ? "flex-start" : "flex-end", padding: "18px 18px 22px" }}>
+                                        <div style={{ color: "#fff", fontWeight: 900, fontSize: 18, fontFamily: theme.font, marginBottom: 4 }}>{plan.name}</div>
+                                        {resolvePrice(plan, theme)}
+                                        <div style={{ margin: "14px 0 18px" }}>
+                                            {renderInteractivePricing(plan, theme, {
+                                                onSlider: updateSlider,
+                                                onToggle: toggleControl,
+                                                onReset: resetPlan,
+                                            })}
+                                            {resolveFeatures(plan, theme)}
+                                        </div>
+                                        <button style={resolveButton(plan, theme)}>{plan.buttonText}</button>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Non image-bg: classic image header */}
+                                    <div style={{ height: 200, background: plan.bgImage ? `url(${plan.bgImage}) center/cover` : plan.bgGradient, position: "relative" }}>
+                                        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,transparent 35%,rgba(0,0,0,0.75))" }} />
+                                        {plan.badge?.trim() && <div style={{ position: "absolute", top: 12, right: 12, background: plan.color, color: "#fff", fontSize: 9, fontWeight: 900, padding: "3px 10px", borderRadius: theme.buttonShape === "pill" ? 99 : 2, letterSpacing: 1.5 }}>{plan.badge}</div>}
+                                        <div style={{ position: "absolute", bottom: 14, left: 16 }}>
+                                            <div style={{ color: "#fff", fontWeight: 900, fontSize: 20, fontFamily: theme.font }}>{plan.name}</div>
+                                            <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 2 }}>{plan.description}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ padding: "18px 18px 22px" }}>
+                                        {!!plan.rating && <Stars rating={plan.rating} color={plan.color} />}
+                                        <div style={{ marginBottom: 14 }}>
+                                            {resolvePrice(plan, theme)}
+                                        </div>
+                                        <div style={{ marginBottom: 20 }}>
+                                            {renderInteractivePricing(plan, theme, {
+                                                onSlider: updateSlider,
+                                                onToggle: toggleControl,
+                                                onReset: resetPlan,
+                                            })}
+                                            {resolveFeatures(plan, theme)}
+                                        </div>
+                                        <button style={btnCSS}>{plan.buttonText}</button>
+                                    </div> {/* closes padding div */}
+                                </>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+        </div>
+    );
 }
 
 // Layout: feature-matrix (plans as columns, features as rows)
@@ -1000,7 +1556,7 @@ function ComparisonTableLayout({ doc }) {
             const cardCSS = resolveCardCSS(theme, plan);
             const btnCSS = resolveButton(plan, theme);
             return (
-              <div key={plan.id} style={{ ...cardCSS, ...animStyle }}>
+              <div key={plan.id} style={cardCSS}>
                 {resolveAccentLine(theme, plan)}
                 {resolveHeader(plan, theme)}
                 <div style={{ padding: "16px 22px 22px" }}>
@@ -1135,22 +1691,98 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
     <NodeRenderer key={child?.id ?? `${type}-${idx}`} node={child} theme={theme} depth={depth + 1} containerWidth={containerWidth} />
   ));
   if (type === "row") {
+    const stackEnabled = node.mobileLayout === "stack" || node.mobileStack;
+    const baseGap = gap !== undefined ? gap : (node.gap === undefined ? "20px" : undefined);
+    const baseGapSize = spacingToNumber(baseGap);
+    const estimatedChildWidth = children.length > 0
+      ? Math.max(0, (containerWidth - (baseGapSize * Math.max(0, children.length - 1))) / children.length)
+      : containerWidth;
     const isMobile = containerWidth < 600;
-    const shouldStack = isMobile && (node.mobileLayout === "stack" || node.mobileStack);
-    const resolvedHeight = px(node.height) || (depth === 0 ? undefined : "100%");
+    const explicitStackBreakpoint = toNumber(node.stackBreakpoint);
+    const responsiveWrapBreakpoint = toNumber(node.wrapBreakpoint)
+      ?? (children.length >= 4 ? 1180 : children.length >= 3 ? 980 : undefined);
+    const tabletStackBreakpoint = explicitStackBreakpoint ?? (
+      children.length >= 4 ? 760 : children.length >= 3 ? 700 : 760
+    );
+    const minChildWidth = toNumber(node.minChildWidth) ?? (children.length >= 4 ? 140 : 260);
+    const hasExplicitHeight = !!node.height;
+    const shouldStack = stackEnabled && (
+      hasExplicitHeight
+        ? (isMobile || containerWidth < tabletStackBreakpoint)
+        : (
+          isMobile ||
+          containerWidth < tabletStackBreakpoint ||
+          (children.length < 4 && estimatedChildWidth < minChildWidth)
+        )
+    );
+    const shouldResponsiveWrap = !shouldStack
+      && children.length >= 3
+      && responsiveWrapBreakpoint != null
+      && containerWidth < responsiveWrapBreakpoint;
+    const shouldWrap = !shouldStack && (
+      node.wrap === true ||
+      shouldResponsiveWrap ||
+      (node.wrap == null && !hasExplicitHeight && children.length >= 4)
+    );
+    const wrapColumns = shouldWrap
+      ? Math.max(1, Math.min(children.length, toNumber(node.wrapColumns) ?? 2))
+      : 1;
+    const resolvedGap = shouldStack
+      ? (resolveSpacing(node.mobileGap) ?? compactResolvedSpacing(baseGap, 0.68, 8) ?? baseGap)
+      : shouldWrap
+        ? (resolveSpacing(node.wrapGap ?? node.tabletGap) ?? compactResolvedSpacing(baseGap, 0.8, 10) ?? baseGap)
+        : baseGap;
+    const resolvedGapSize = spacingToNumber(resolvedGap);
+    const explicitHeightPx = toNumber(node.height) ?? toNumber(node.minHeight);
+    const hasCardLikeChildren = children.some((child) => child?.type === "photo-card" || child?.type === "column");
+    const defaultAutoHeightChildWidth = children.length >= 4 ? 220 : children.length >= 3 ? 320 : 280;
+    const defaultAutoHeightBreakpoint = children.length >= 4 ? 1120 : children.length >= 3 ? 980 : 820;
+    const tallRowAutoHeightChildWidth = explicitHeightPx != null && explicitHeightPx >= 560
+      ? (children.length >= 4 ? 260 : children.length >= 3 ? 380 : 320)
+      : defaultAutoHeightChildWidth;
+    const tallRowAutoHeightBreakpoint = explicitHeightPx != null && explicitHeightPx >= 560
+      ? (children.length >= 4 ? 1240 : children.length >= 3 ? 1120 : 900)
+      : defaultAutoHeightBreakpoint;
+    const autoHeightChildWidth = toNumber(node.autoHeightMinChildWidth)
+      ?? (hasCardLikeChildren ? tallRowAutoHeightChildWidth : defaultAutoHeightChildWidth);
+    const autoHeightBreakpoint = toNumber(node.autoHeightBreakpoint)
+      ?? (hasCardLikeChildren ? tallRowAutoHeightBreakpoint : defaultAutoHeightBreakpoint);
+    const shouldAutoHeight = hasExplicitHeight && !shouldStack && (
+      containerWidth < autoHeightBreakpoint ||
+      estimatedChildWidth < autoHeightChildWidth
+    );
+    const resolvedHeight = shouldStack || shouldAutoHeight
+      ? undefined
+      : (px(node.height) || (depth === 0 ? undefined : "100%"));
+    const resolvedMinHeight = shouldStack || shouldAutoHeight
+      ? (px(node.minHeight) || px(node.height))
+      : px(node.minHeight);
+    const resolvedPadding = shouldStack
+      ? (resolveSpacing(node.mobilePadding) ?? compactResolvedSpacing(padding, 0.68, 10) ?? padding)
+      : shouldWrap
+        ? (resolveSpacing(node.wrapPadding ?? node.tabletPadding) ?? compactResolvedSpacing(padding, 0.82, 12) ?? padding)
+        : padding;
+    const wrapChildBasis = shouldWrap && wrapColumns > 1
+      ? `calc((100% - ${resolvedGapSize * Math.max(0, wrapColumns - 1)}px) / ${wrapColumns})`
+      : undefined;
+    const wrappedChildWidth = shouldWrap && wrapColumns > 1
+      ? Math.max(0, (containerWidth - (resolvedGapSize * Math.max(0, wrapColumns - 1))) / wrapColumns)
+      : estimatedChildWidth;
+    const childContainerWidth = shouldStack ? containerWidth : wrappedChildWidth;
     return (
       <div ref={hasAnim ? containerRef : null} style={{
         display: "flex",
         flexDirection: shouldStack ? "column" : "row",
         position: "relative",
-        alignItems: node.align,
-        justifyContent: node.justify,
-        gap: gap !== undefined ? gap : (node.gap === undefined ? "20px" : undefined),
+        alignItems: resolveFlexAlign(node.align, "stretch"),
+        justifyContent: resolveFlexAlign(node.justify, "flex-start"),
+        flexWrap: shouldWrap ? "wrap" : "nowrap",
+        gap: resolvedGap,
         background: node.background,
-        padding: padding,
+        padding: resolvedPadding,
         height: resolvedHeight,
         width: px(node.width),
-        minHeight: px(node.minHeight),
+        minHeight: resolvedMinHeight,
         overflow: node.overflow,
         borderRadius: node.borderRadius,
         border: node.border,
@@ -1166,9 +1798,31 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
           const animStyle = hasAnim
             ? (visible ? getCardAnim(theme.animation, idx, children.length) : { opacity: 0 })
             : {};
+          const isFluidSpacer = child?.type === "spacer" && child?.size == null;
+          const shouldForceFullWidthOnWrap = shouldWrap && (child?.wrapFullWidth || child?.mobileFullWidth);
+          const shouldExcludeFromWrapColumns = shouldWrap && child?.wrapExclude;
+          const childFlexStyle = shouldWrap && wrapChildBasis
+            ? shouldForceFullWidthOnWrap
+              ? { flex: "1 1 100%", minWidth: "100%", maxWidth: "100%" }
+              : shouldExcludeFromWrapColumns
+                ? {
+                  flex: child?.flex != null ? child.flex : "0 0 auto",
+                  width: px(child?.width),
+                  flexBasis: px(child?.flexBasis),
+                }
+                : isFluidSpacer
+                  ? { flex: "1 1 100%", minWidth: "100%" }
+                  : { flex: `0 0 ${wrapChildBasis}`, maxWidth: wrapChildBasis }
+            : !shouldStack
+              ? child?.flex != null
+                ? { flex: child.flex }
+                : isFluidSpacer
+                  ? { flex: 1 }
+                  : {}
+              : {};
           return (
-            <div key={child?.id ?? `row-${idx}`} style={{ minWidth: 0, display: "flex", flexDirection: "column", alignSelf: "stretch", ...animStyle, ...(child?.flex ? { flex: child.flex } : {}) }}>
-              <NodeRenderer node={child} theme={theme} depth={depth + 1} containerWidth={containerWidth} />
+            <div key={child?.id ?? `row-${idx}`} style={{ minWidth: 0, width: shouldStack ? "100%" : undefined, height: !shouldStack && node.height && !shouldAutoHeight ? "100%" : undefined, display: "flex", flexDirection: "column", alignSelf: "stretch", ...animStyle, ...childFlexStyle }}>
+              <NodeRenderer node={child} theme={theme} depth={depth + 1} containerWidth={childContainerWidth} />
             </div>
           );
         })}
@@ -1182,8 +1836,8 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
       display: "flex",
       flexDirection: "column",
       position: "relative",
-      alignItems: node.align,
-      justifyContent: node.justify,
+      alignItems: resolveFlexAlign(node.align, "stretch"),
+      justifyContent: resolveFlexAlign(node.justify, "flex-start"),
       gap: gap !== undefined ? gap : (() => {
         if (!node.gap && Array.isArray(node.children) && node.children.length) {
           const maxSize = node.children.reduce((m, c) => {
@@ -1249,6 +1903,8 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
     const backgroundImage = node.bgGradient && bgImage
       ? `${node.bgGradient}, url(${bgImage})`
       : node.bgGradient || (bgImage ? `url(${bgImage})` : undefined);
+    const canGrowForContent = containerWidth < 360 && !!node.height;
+    const photoFlexStyle = node.height ? {} : flexStyle;
     return (
       <div style={{
         position: "relative",
@@ -1257,42 +1913,58 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
         backgroundSize: "cover",
         backgroundPosition: node.objectPosition || "center",
         backgroundRepeat: "no-repeat",
-        height: px(node.height) || "100%",
-        minHeight: px(node.minHeight) || (bgImage && !node.height ? "200px" : undefined),
-        width: px(node.width),
+        height: canGrowForContent ? "auto" : (px(node.height) || "100%"),
+        minHeight: canGrowForContent
+          ? (px(node.height) || px(node.minHeight) || (bgImage ? "200px" : undefined))
+          : (px(node.minHeight) || (bgImage && !node.height ? "200px" : undefined)),
+        width: px(node.width) || "100%",
         borderRadius: node.borderRadius,
         border: node.border,
         alignSelf: "stretch",
         transition: "background-image 0.2s ease",
         boxSizing: "border-box",
-        ...flexStyle,
+        ...photoFlexStyle,
       }}>
         {renderChildren()}
       </div>
     );
   }
   if (type === "grid") {
-    return (
-      <div ref={hasAnim ? containerRef : null} style={{
-        display: "grid",
-        gridTemplateColumns: columns,
-        gap, padding, background: node.background,
-        width: node.width, maxWidth: node.maxWidth,
-        margin: node.margin, boxSizing: "border-box",
-      }}>
-        {children.map((child, idx) => {
-          const animStyle = hasAnim
-            ? (visible ? getCardAnim(theme.animation, idx, children.length) : { opacity: 0 })
-            : {};
-          return (
-            <div key={child?.id ?? `grid-${idx}`} style={animStyle}>
-              <NodeRenderer node={child} theme={theme} depth={depth + 1} containerWidth={containerWidth} />
+        let gridTemplateColumns = columns;
+        if (typeof node.columns === "number") {
+            let resolvedColumns = node.columns;
+            const mobileColumns = toNumber(node.mobileColumns);
+            const tabletColumns = toNumber(node.tabletColumns);
+            if (containerWidth < 640) {
+                resolvedColumns = mobileColumns ?? 1;
+            } else if (containerWidth < 960) {
+                resolvedColumns = tabletColumns ?? Math.min(node.columns, 2);
+            } else if (containerWidth < 1240 && node.columns >= 4) {
+                resolvedColumns = Math.min(node.columns, 3);
+            }
+            gridTemplateColumns = `repeat(${Math.max(1, resolvedColumns)}, minmax(0, 1fr))`;
+        }
+        return (
+            <div ref={hasAnim ? containerRef : null} style={{
+                display: "grid",
+                gridTemplateColumns,
+                gap, padding, background: node.background,
+                width: node.width, maxWidth: node.maxWidth,
+                margin: node.margin, boxSizing: "border-box",
+            }}>
+                {children.map((child, idx) => {
+                    const animStyle = hasAnim
+                        ? (visible ? getCardAnim(theme.animation, idx, children.length) : { opacity: 0 })
+                        : {};
+                    return (
+                        <div key={child?.id ?? `grid-${idx}`} style={animStyle}>
+                            <NodeRenderer node={child} theme={theme} depth={depth + 1} containerWidth={containerWidth} />
+                        </div>
+                    );
+                })}
             </div>
-          );
-        })}
-      </div>
-    );
-  }
+        );
+    }
 
   if (type === "comparison-grid") {
     const cols = node.columns || 4;
@@ -1361,6 +2033,15 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
   }
 
   if (type === "absolute") {
+    const isFullCoverAbsolute = [node.top, node.right, node.bottom, node.left].every((value) => {
+      if (value == null) return false;
+      if (typeof value === "number") return value === 0;
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed === "0" || trimmed === "0px" || trimmed === "0%";
+      }
+      return false;
+    });
     return (
       <div style={{
         position: "absolute",
@@ -1376,7 +2057,24 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
         pointerEvents: node.pointerEvents,
         boxSizing: "border-box",
       }}>
-        {renderChildren()}
+        {children.map((child, idx) => {
+          const patchedChild = isFullCoverAbsolute && (child?.type === "column" || child?.type === "row")
+            ? {
+              ...child,
+              height: child?.height ?? "100%",
+              width: child?.width ?? "100%",
+            }
+            : child;
+          return (
+            <NodeRenderer
+              key={patchedChild?.id ?? `absolute-${idx}`}
+              node={patchedChild}
+              theme={theme}
+              depth={depth + 1}
+              containerWidth={containerWidth}
+            />
+          );
+        })}
       </div>
     );
   }
@@ -1627,7 +2325,22 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
   if (type === "text") {
     const rawValue = typeof node.value === "string" ? node.value : "";
     if (!rawValue.trim()) return null;
-    const size = node.size || 16;
+    const baseSize = node.size || 16;
+    let responsiveScale = 1;
+    if (containerWidth < 360) responsiveScale = 0.68;
+    else if (containerWidth < 480) responsiveScale = 0.78;
+    else if (containerWidth < 640) responsiveScale = 0.88;
+    const size = baseSize >= 24
+      ? Math.max(baseSize >= 40 ? 26 : 20, Math.round(baseSize * responsiveScale))
+      : baseSize;
+    const baseLetterSpacing = toNumber(node.letterSpacing);
+    const responsiveLetterSpacing = baseLetterSpacing == null
+      ? node.letterSpacing
+      : (containerWidth < 480 ? Math.max(baseLetterSpacing * 0.45, -0.8) : containerWidth < 640 ? baseLetterSpacing * 0.72 : baseLetterSpacing);
+    const baseLineHeight = toNumber(node.lineHeight);
+    const responsiveLineHeight = baseLineHeight != null
+      ? (size >= 30 ? Math.max(1.04, baseLineHeight) : baseLineHeight)
+      : (size >= 40 ? 1.04 : size >= 28 ? 1.12 : undefined);
     let autoMarginBottom = 4;
     if (size >= 36) autoMarginBottom = 14;
     else if (size >= 24) autoMarginBottom = 10;
@@ -1636,17 +2349,18 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
     return (
       <div style={{
         color: node.color || "#111",
-        fontSize: node.size,
+        fontSize: size,
         fontWeight: node.weight,
-        letterSpacing: node.letterSpacing,
+        letterSpacing: responsiveLetterSpacing,
         textTransform: node.transform,
         fontStyle: node.italic ? "italic" : "normal",
         textAlign: node.align,
         marginBottom: node.marginBottom !== undefined ? resolveSpacing(node.marginBottom) : autoMarginBottom,
         marginTop: node.marginTop !== undefined ? resolveSpacing(node.marginTop) : 0,
         fontFamily: node.fontFamily || fontFamily,
-        lineHeight: node.lineHeight,
+        lineHeight: responsiveLineHeight,
         transform: resolveTransform(node),
+        overflowWrap: "anywhere",
       }}>
         {node.value}
       </div>
@@ -1688,21 +2402,26 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
   }
 
   if (type === "crest") {
-    const crestColor = node.color || "#111";
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {node.wingEmoji && <span style={{ fontSize: 14 }}>{node.wingEmoji}</span>}
-          <div style={{ width: 36, height: 36, borderRadius: 6, border: `2px solid ${crestColor}`, display: "flex", alignItems: "center", justifyContent: "center", color: crestColor, fontWeight: 900, fontSize: 16 }}>
-            {node.text}
-          </div>
-          {node.wingEmoji && <span style={{ fontSize: 14 }}>{node.wingEmoji}</span>}
-        </div>
-        {node.subtitle && <div style={{ fontSize: 10, letterSpacing: 1, color: crestColor }}>{node.subtitle}</div>}
-        {node.tagline && <div style={{ fontSize: 10, opacity: 0.6, color: crestColor }}>{node.tagline}</div>}
-      </div>
-    );
-  }
+        const crestColor = node.color || "#111";
+        const hasMeta = !!(node.subtitle || node.tagline);
+        return (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    {node.wingEmoji && <span style={{ fontSize: 14 }}>{node.wingEmoji}</span>}
+                    <div style={{ minWidth: 36, height: 36, padding: "0 10px", borderRadius: 10, border: `2px solid ${crestColor}`, display: "flex", alignItems: "center", justifyContent: "center", color: crestColor, fontWeight: 900, fontSize: 13, letterSpacing: 0.8, textTransform: "uppercase", whiteSpace: "nowrap" }}>
+                        {node.text}
+                    </div>
+                    {node.wingEmoji && <span style={{ fontSize: 14 }}>{node.wingEmoji}</span>}
+                </div>
+                {hasMeta && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-start", minWidth: 0 }}>
+                        {node.subtitle && <div style={{ fontSize: 10, letterSpacing: 1, color: crestColor, whiteSpace: "nowrap" }}>{node.subtitle}</div>}
+                        {node.tagline && <div style={{ fontSize: 10, opacity: 0.6, color: crestColor, whiteSpace: "nowrap" }}>{node.tagline}</div>}
+                    </div>
+                )}
+            </div>
+        );
+    }
 
   if (type === "image") {
     const src = normalizeAssetUrl(node.src);
@@ -1727,12 +2446,15 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
   }
 
   if (type === "icon") {
-    return (
-      <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: node.background || "rgba(0,0,0,0.08)", borderRadius: node.borderRadius ?? 999, padding: node.padding ?? 6, fontSize: node.size || 14, transform: resolveTransform(node) }}>
-        {node.emoji}
-      </div>
-    );
-  }
+        const iconName = typeof node.name === "string" ? node.name.trim().toLowerCase() : "";
+        const IconComponent = iconName ? ICON_COMPONENTS[iconName] : null;
+        const iconSize = node.size || 14;
+        return (
+            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", background: node.background || "rgba(0,0,0,0.08)", color: node.color || "currentColor", borderRadius: node.borderRadius ?? 999, padding: node.padding ?? 6, fontSize: iconSize, transform: resolveTransform(node) }}>
+                {IconComponent ? <IconComponent size={iconSize} strokeWidth={node.strokeWidth ?? 2.1} /> : (node.emoji || node.icon || "•")}
+            </div>
+        );
+    }
 
   console.warn(`[NodeRenderer] Unknown node type: "${node.type}"`, node);
   return (
@@ -1804,24 +2526,88 @@ function isPlainObject(value) {
   return value && typeof value === "object" && !Array.isArray(value);
 }
 
+function tryParseJson(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!(trimmed.startsWith("{") || trimmed.startsWith("["))) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return null;
+  }
+}
+
+function hasRenderableCore(value) {
+  if (!isPlainObject(value)) return false;
+  const hasLayout = (typeof value.layout === "string" && value.layout.trim().length > 0)
+    || isPlainObject(value.layout);
+  const hasPlans = Array.isArray(value.plans) && value.plans.length > 0;
+  const hasTheme = isPlainObject(value.theme) && Object.keys(value.theme).length > 0;
+  return hasLayout || hasPlans || hasTheme;
+}
+
+function preferNonEmptyString(primary, fallback = "") {
+  if (typeof primary === "string" && primary.trim()) return primary;
+  if (typeof fallback === "string" && fallback.trim()) return fallback;
+  return primary ?? fallback ?? "";
+}
+
+function findRenderableConfig(value, depth = 0, seen = new Set()) {
+  if (depth > 6 || value == null) return null;
+
+  const parsed = tryParseJson(value);
+  if (isPlainObject(parsed)) {
+    const parsedResult = findRenderableConfig(parsed, depth + 1, seen);
+    if (parsedResult) return parsedResult;
+  }
+
+  if (!isPlainObject(value)) return null;
+  if (seen.has(value)) return null;
+  seen.add(value);
+
+  if (hasRenderableCore(value)) return value;
+
+  const priorityKeys = ["config_json", "template_data", "widget_data", "data", "template", "content", "payload"];
+  for (const key of priorityKeys) {
+    const next = value[key];
+    const result = findRenderableConfig(next, depth + 1, seen);
+    if (result) return result;
+  }
+
+  for (const nestedValue of Object.values(value)) {
+    const result = findRenderableConfig(nestedValue, depth + 1, seen);
+    if (result) return result;
+  }
+
+  return null;
+}
+
 function normalizeTemplateDoc(raw) {
   if (!isPlainObject(raw)) return null;
+
+  const parsedTemplateData = tryParseJson(raw.template_data);
+  const parsedWidgetData = tryParseJson(raw.widget_data);
 
   const source = isPlainObject(raw.template_data)
     ? raw.template_data
     : isPlainObject(raw.widget_data)
       ? raw.widget_data
-      : raw;
+      : isPlainObject(parsedTemplateData)
+        ? parsedTemplateData
+        : isPlainObject(parsedWidgetData)
+          ? parsedWidgetData
+          : raw;
 
-  const config = isPlainObject(source.config_json) ? source.config_json : null;
+  const config = findRenderableConfig(source.config_json) || findRenderableConfig(source);
   const doc = config
     ? {
-      id: source.id,
-      name: source.name,
-      category: source.category,
-      tag: source.tag,
-      image: source.image ?? "",
       ...config,
+      id: config.id ?? source.id,
+      name: preferNonEmptyString(config.name, source.name ?? "Template"),
+      category: preferNonEmptyString(config.category, source.category ?? "General"),
+      tag: preferNonEmptyString(config.tag, source.tag ?? ""),
+      image: preferNonEmptyString(config.image, source.image ?? ""),
     }
     : { ...source };
 
