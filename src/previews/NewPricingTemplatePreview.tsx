@@ -68,10 +68,11 @@ const ICON_COMPONENTS = {
     grid: LayoutGrid,
 };
 
-function HoverButton({ baseStyle, normalStyle, hoverStyle, text }) {
+function HoverButton({ baseStyle, normalStyle, hoverStyle, text, buttonProps = {} }) {
   const [hovered, setHovered] = useState(false);
   return (
     <button
+      {...buttonProps}
       style={{ ...baseStyle, ...normalStyle, ...(hovered ? hoverStyle : {}) }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -170,6 +171,7 @@ function GlowButton({ node, fontFamily }) {
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <div className={`${id}-wrap`}>
         <button
+          {...getNodeButtonDataAttrs(node)}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           style={{
@@ -244,6 +246,28 @@ function formatPlanDelta(plan, amount) {
     const parsed = Number(amount) || 0;
     const sign = parsed >= 0 ? "+" : "-";
     return `${sign}${plan?.currency || "$"}${formatPlanAmount(plan, Math.abs(parsed))}`;
+}
+
+function getPlanButtonDataAttrs(plan) {
+    const planId = `${plan?.planId || plan?.id || ""}`.trim();
+    const paymentType = `${plan?.paymentType || ""}`.trim().toLowerCase();
+    const interval = `${plan?.interval || ""}`.trim().toLowerCase();
+    const attrs = {};
+    if (planId) attrs["data-plan-id"] = planId;
+    if (paymentType) attrs["data-payment-type"] = paymentType;
+    if (interval) attrs["data-interval"] = interval;
+    return attrs;
+}
+
+function getNodeButtonDataAttrs(node) {
+    const planId = `${node?.planId || node?.id || ""}`.trim();
+    const paymentType = `${node?.paymentType || ""}`.trim().toLowerCase();
+    const interval = `${node?.interval || ""}`.trim().toLowerCase();
+    const attrs = {};
+    if (planId) attrs["data-plan-id"] = planId;
+    if (paymentType) attrs["data-payment-type"] = paymentType;
+    if (interval) attrs["data-interval"] = interval;
+    return attrs;
 }
 
 function getPricingControls(plan) {
@@ -1297,8 +1321,8 @@ function GridLayout({ doc }) {
 
                                 {/* Button */}
                                 {theme.buttonShape === "underline"
-                                    ? <button style={btnCSS}>{plan.buttonText} &rarr;</button>
-                                    : <button style={btnCSS}>{plan.buttonText}</button>
+                                    ? <button {...getPlanButtonDataAttrs(plan)} style={btnCSS}>{plan.buttonText} &rarr;</button>
+                                    : <button {...getPlanButtonDataAttrs(plan)} style={btnCSS}>{plan.buttonText}</button>
                                 }
                             </div>
                         </>
@@ -1387,7 +1411,7 @@ function HorizontalLayout({ doc }) {
                             <div style={{ marginBottom: 20 }}>
                                 {resolveFeatures(plan, theme)}
                             </div>
-                            <button style={btnCSS}>{plan.buttonText}</button>
+                            <button {...getPlanButtonDataAttrs(plan)} style={btnCSS}>{plan.buttonText}</button>
                         </div>
                     </div>
                 );
@@ -1444,7 +1468,7 @@ function TallPortraitLayout({ doc }) {
                                             })}
                                             {resolveFeatures(plan, theme)}
                                         </div>
-                                        <button style={resolveButton(plan, theme)}>{plan.buttonText}</button>
+                                        <button {...getPlanButtonDataAttrs(plan)} style={resolveButton(plan, theme)}>{plan.buttonText}</button>
                                     </div>
                                 </>
                             ) : (
@@ -1471,7 +1495,7 @@ function TallPortraitLayout({ doc }) {
                                             })}
                                             {resolveFeatures(plan, theme)}
                                         </div>
-                                        <button style={btnCSS}>{plan.buttonText}</button>
+                                        <button {...getPlanButtonDataAttrs(plan)} style={btnCSS}>{plan.buttonText}</button>
                                     </div> {/* closes padding div */}
                                 </>
                             )}
@@ -1514,7 +1538,7 @@ function FeatureMatrixLayout({ doc }) {
                   <span style={{ fontWeight: 400, fontSize: 11, color: "#9ca3af" }}>/{plan.period}</span>
                 </div>
                 <div style={{ color: "#9ca3af", fontSize: 11, marginBottom: 10 }}>{plan.description}</div>
-                <button style={{ padding: "8px 18px", background: plan.highlighted ? plan.color : "transparent", color: plan.highlighted ? "#fff" : plan.color, border: `1px solid ${plan.color}`, borderRadius: parseInt(theme.borderRadius) > 8 ? 8 : 6, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: theme.font }}>{plan.buttonText}</button>
+                <button {...getPlanButtonDataAttrs(plan)} style={{ padding: "8px 18px", background: plan.highlighted ? plan.color : "transparent", color: plan.highlighted ? "#fff" : plan.color, border: `1px solid ${plan.color}`, borderRadius: parseInt(theme.borderRadius) > 8 ? 8 : 6, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: theme.font }}>{plan.buttonText}</button>
               </div>
             ))}
           </div>
@@ -1573,7 +1597,7 @@ function ComparisonTableLayout({ doc }) {
                   <div style={{ height: 1, background: "#f1f5f9", margin: "16px 0" }} />
                   {resolveFeatures(plan, theme)}
                   <div style={{ marginTop: 20 }}>
-                    <button style={btnCSS}>{plan.buttonText}</button>
+                    <button {...getPlanButtonDataAttrs(plan)} style={btnCSS}>{plan.buttonText}</button>
                   </div>
                 </div>
               </div>
@@ -2314,6 +2338,7 @@ function NodeRenderer({ node, theme, depth = 0, containerWidth = 800 }) {
         normalStyle={normalStyle}
         hoverStyle={hoverStyle}
         text={node.text}
+        buttonProps={getNodeButtonDataAttrs(node)}
       />
     );
   }
@@ -2627,3 +2652,7 @@ function normalizeTemplateDoc(raw) {
 
 export { normalizeTemplateDoc };
 export default PricingRenderer;
+
+
+
+
